@@ -1,0 +1,22 @@
+<html>
+    <head>
+        <title>websocket test</title>
+        <script type="text/javascript">
+            var socekt = new WebSocket('ws://192.168.1.107:8000/websocket');
+
+            socekt.onmessage = function (evt) {
+                var msg = evt.data;
+                alert('recv ws data '+msg)
+            }
+
+            function send_ws_text(data) {
+                alert('send ws data');
+                socekt.send(data);
+            };
+        </script>
+    </head>
+    <body>
+        <input type="button" value="send test" onclick="send_ws_text('123')">
+        
+    </body>
+</html>
