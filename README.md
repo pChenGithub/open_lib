@@ -3,10 +3,10 @@
 开源项目移植使用总结，业务封装
 
 
-## mongoose
+## mongoose_boj
 ### 1、webservice + websocket
 ### 2、webservice
 
 
 
-## curl
+## curl_obj
