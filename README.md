@@ -10,3 +10,4 @@
 
 
 ## curl_obj
+# 依赖 libssl cmake
