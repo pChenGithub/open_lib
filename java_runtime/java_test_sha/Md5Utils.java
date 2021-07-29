@@ -1,5 +1,6 @@
 package java_runtime.java_test_sha;
 
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -14,7 +15,15 @@ public class Md5Utils {
             e.printStackTrace();
             return null;
         }
-        md.update(source.getBytes());
+
+        try {
+            md.update(source.getBytes("UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+        }
+        
         return new String(md.digest());
     }
     
