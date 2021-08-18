@@ -1,3 +1,6 @@
 [submodule "curl_obj/curl"]
 	path = curl_obj/curl
 	url = https://github.com/curl/curl.git
+[submodule "easyLogger_obj/EasyLogger"]
+	path = easyLogger_obj/EasyLogger
+	url = https://github.com/armink/EasyLogger.git
