@@ -11,4 +11,7 @@ int get_gateway(const char* ifname, char *ip, int len);
 // 获取指定ifname的掩码
 int get_mask(const char* ifname, char *ip, int len);
 
+// 基于libnl获取网络信息
+int nl_getGateway();
+
 #endif

@@ -99,3 +99,9 @@ socket_close_exit:
     close(socketfd);
     return ret;
 }
+
+
+int nl_getGateway()
+{
+
+}
