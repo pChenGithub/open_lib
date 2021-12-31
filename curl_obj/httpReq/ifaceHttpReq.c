@@ -1,51 +1,41 @@
-#include "interface_httpC.h"
+#include "ifaceHttpReq.h"
 #include "curl/curl.h"
 
 #include <string.h>
 #include <stdlib.h>
 
-
-#define LOGTAG "httpc_svc"
-
 // 写文件
-void http_reply_file(const char* buffer, int len, void** outstream)
+static int http_reply_file(const char* buffer, int len, void* arg)
 {
-
-    FILE* fp = *outstream;
+    HTTP_REPLY* reply = (HTTP_REPLY*)arg;
+    FILE* fp = reply->p;
     // 请求返回写入文件
     fwrite(buffer, len, 1, fp);
+    return 0;
 }
 
 // 写内存
-void http_reply_json(const char* buffer, int len, void** outstream)
+static int http_reply_json(const char* buffer, int len, void* arg)
 {
-    char* p;
-    int lenght = 0;
-    if (NULL==*outstream)
+    HTTP_REPLY* reply = (HTTP_REPLY*)arg;
+    char* p = reply->p;
+    int maxLen = reply->len;
+
+    if (maxLen<=(reply->offset+len))
     {
-        // 分段返回第一段
-        // 第一次分配内存
-        p = (char*)malloc(len+1);
-        if (NULL==p)
-        {
-            return ;
-        }
-        // 初始化http请求参数，这里开始指针不为空了
-        *outstream = p;
+        // 缓存不足，报错
+        reply->ret = -HTTPERROR_BUFF_NOTENOUGH;
+        return -HTTPERROR_BUFF_NOTENOUGH;
     }
-    else
-    {
-        // 第一段之后返回，修改内存长度
-        p = (char*)*outstream;
-        lenght = strlen(p);
-        p = (char*)realloc(p, lenght+len+1);
-        *outstream = p;
-        p = p+lenght;
-    }
+
+    // 偏移
+    p += reply->offset;
 
     // 填入返回内容
     memcpy(p, buffer, len);
+    reply->offset += len;
     p[len] = 0;
+    return 0;
 }
 
 /**
@@ -55,25 +45,27 @@ void http_reply_json(const char* buffer, int len, void** outstream)
 static size_t curl_write_cb(void* buffer, size_t size, size_t nitems, void* arg)
 {
     size_t count = size*nitems;
-    httpC_req_task* req = (httpC_req_task*)arg;
+    HTTP_REPLY* reply = (HTTP_REPLY*)arg;
 
     //LOG_D("http reply data len %d ", count);
-    if (NULL==buffer || 0==count || NULL==req)
+    if (NULL==buffer || 0==count || NULL==reply)
     {
-        return -1;
+        reply->ret = -HTTPERROR_CHECK_PAREM;
+        return -HTTPERROR_CHECK_PAREM;
     }
-    req->reply.opt(buffer, count, &req->reply.p);
+    reply->opt(buffer, count, reply);
     return count;
 }
 
 /**
  * 一个http请求,可重入的
- * req http请求结构体
+ * type http请求返回类型
+ * url  请求地址
  * data 请求/返回的json字符串（如果返回json），指定文件名（如果获取的文件）
  * len  data长度
  *
 */
-int httpC_svc_req(httpC_reply_type type, const char *url, char *data, const int len)
+int httpReq(HTTP_REPLY_TYPE type, const char *url, char *data, const int len)
 {
 
     if (NULL==url || NULL==data || len<=0)
@@ -81,8 +73,9 @@ int httpC_svc_req(httpC_reply_type type, const char *url, char *data, const int 
 
     int ret = 0;
     int lenght = strlen(data);
-    httpC_reply reply;
+    HTTP_REPLY reply;
     CURL *curl = NULL;
+    struct curl_slist *headers = NULL;
     CURLcode res;
     char head_pro[64] = {0};
 
@@ -101,7 +94,9 @@ int httpC_svc_req(httpC_reply_type type, const char *url, char *data, const int 
         break;
     case RET_JSON:
         reply.opt = http_reply_json;
-        reply.p = NULL;
+        // 有返回内容，把缓存指向data，并且指定长度
+        reply.p = data;
+        reply.len = len;
         break;
     default:
         break;
@@ -120,7 +115,7 @@ int httpC_svc_req(httpC_reply_type type, const char *url, char *data, const int 
     curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 3000L);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
-    struct curl_slist *headers = NULL;
+
     headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
     headers = curl_slist_append(headers, head_pro);
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -132,42 +127,28 @@ int httpC_svc_req(httpC_reply_type type, const char *url, char *data, const int 
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &reply);
 
+    // 执行请求,等待回调结束
     res = curl_easy_perform(curl);
     if (res!=CURLE_OK)
-    {
         ret = -HTTPERROR_CURL_PERFORM;
-        goto curlInitError;
-    }
-
-    //
-    if (RET_JSON==type && NULL!=reply.p)
-    {
-        lenght = strlen((char*)reply.p);
-        printf("buff长度 %d  %d \n", len, lenght);
-        if (lenght>=len)
-        {
-            ret = -HTTPERROR_BUFF_NOTENOUGH;
-            goto curlInitError;
-        }
-        memset(data, 0, len);
-        memcpy(data, (char*)reply.p, lenght);
-        data[lenght] = 0;
-    }
 
 curlInitError:
-    // 清理资源请求回调产生的资源，返回是文件，需要关掉文件，返回是json，需要free掉
-    httpC_svc_reply_reset(&reply);
+    // 如果是文件，需要关闭
+    if (RET_FILE==reply.type && NULL!=reply.p)
+        fclose(reply.p);
+
     curl_slist_free_all(headers);
     curl_easy_cleanup(curl);
     return ret;
 }
 
+#if 0
 /**
  * 复位回应
  * reply 回调中的回应
  *
 */
-void httpC_svc_reply_reset(httpC_reply *reply)
+void httpC_svc_reply_reset(HTTP_REPLY *reply)
 {
     switch (reply->type)
     {
@@ -192,7 +173,9 @@ void httpC_svc_reply_reset(httpC_reply *reply)
         break;
     }
 }
+#endif
 
+#if 0
 // http协议上传文件
 int httpC_uplaodFile(httpC_req_task *req, http_response_cb cb)
 {
@@ -280,3 +263,7 @@ int httpC_uplaodFile(httpC_req_task *req, http_response_cb cb)
 
     return ret;
 }
+#endif
+
+
+
