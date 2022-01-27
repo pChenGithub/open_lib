@@ -9,6 +9,10 @@
 #ifndef _IFACEHTTPREQ_H_
 #define _IFACEHTTPREQ_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define HTTPERROR_CHECK_PAREM       1   // 参数检查失败
 #define HTTPERROR_OPENFILE          2   // 打开文件失败
 #define HTTPERROR_CURL_INIT         3   // curl init失败
@@ -57,6 +61,11 @@ void httpC_svc_reply_reset(HTTP_REPLY* reply);
 // 上传日志文件（上传日志专用）
 int httpC_uplaodFile(httpC_req_task *req, http_response_cb cb);
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /*_IFACEHTTPREQ_H_*/
 
 

@@ -91,6 +91,7 @@ int httpReq(HTTP_REPLY_TYPE type, const char *url, char *data, const int len)
         {
             return -HTTPERROR_OPENFILE;
         }
+        lenght = 0;
         break;
     case RET_JSON:
         reply.opt = http_reply_json;
@@ -130,7 +131,10 @@ int httpReq(HTTP_REPLY_TYPE type, const char *url, char *data, const int len)
     // 执行请求,等待回调结束
     res = curl_easy_perform(curl);
     if (res!=CURLE_OK)
+    {
+        printf("perform error %d\n", res);
         ret = -HTTPERROR_CURL_PERFORM;
+    }
 
 curlInitError:
     // 如果是文件，需要关闭
