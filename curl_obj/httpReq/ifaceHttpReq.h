@@ -52,8 +52,10 @@ typedef struct {
 // 定义请求回调函数原型类型
 typedef void (*http_response_cb)(httpC_req_task* req);
 #endif
-// http请求接口，填入请求结构体和回调函数
+// http请求接口，这里的type是为了用户指定返回的内容
 int httpReq(HTTP_REPLY_TYPE type ,const char* url, char* data, const int len);
+// http上传文件，data
+int httpUploadFile(const char* url, char* data, int len, char *admin, char *pass);
 // int httpC_svc_set_req_cb();
 #if 0
 // 释放返回资源

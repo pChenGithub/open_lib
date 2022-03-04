@@ -269,5 +269,88 @@ int httpC_uplaodFile(httpC_req_task *req, http_response_cb cb)
 }
 #endif
 
+// 这里上传日志肯定会有json字符串返回，认为返回的类型是json
+int httpUploadFile(const char *url, char *data, int len, char* admin, char* pass)
+{
+    if (NULL==url || NULL==data || len<=0)
+        return -HTTPERROR_CHECK_PAREM;
 
+    curl_mime *mime = NULL;
+    curl_mimepart *part = NULL;
+    int ret = 0;
+    HTTP_REPLY reply;
+    CURL *curl = NULL;
+    struct curl_slist *headers = NULL;
+    CURLcode res;
 
+    memset(&reply, 0, sizeof(reply));
+    reply.type = RET_JSON;
+    reply.opt = http_reply_json;
+    // 指定http返回内容填入到data
+    reply.p = data;
+    reply.len = len;
+
+    // 准备发送http请求
+    curl = curl_easy_init();
+    if (NULL==curl)
+    {
+        ret = -HTTPERROR_CURL_INIT;
+        goto curlInitError;
+    }
+
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, 10000L);
+    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "http");
+
+    //headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+    mime = curl_mime_init(curl);
+
+    part = curl_mime_addpart(mime);
+    curl_mime_name(part, "username");
+    curl_mime_data(part, admin, CURL_ZERO_TERMINATED);
+
+    part = curl_mime_addpart(mime);
+    curl_mime_name(part, "password");
+    curl_mime_data(part, pass, CURL_ZERO_TERMINATED);
+
+    printf("上传文件： %s\n", data);
+    part = curl_mime_addpart(mime);
+    curl_mime_name(part, "file");
+    curl_mime_filedata(part, data);
+
+    part = curl_mime_addpart(mime);
+    curl_mime_name(part, "path");
+    curl_mime_data(part, "log", CURL_ZERO_TERMINATED);
+
+    part = curl_mime_addpart(mime);
+    curl_mime_name(part, "output");
+    curl_mime_data(part, "json", CURL_ZERO_TERMINATED);
+
+    curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &reply);
+
+    // 执行请求,等待回调结束
+    res = curl_easy_perform(curl);
+    if (res!=CURLE_OK)
+    {
+        printf("perform error %d\n", res);
+        ret = -HTTPERROR_CURL_PERFORM;
+    }
+
+curlInitError:
+    if (NULL!=mime)
+        curl_mime_free(mime);
+
+    if (NULL!=headers)
+        curl_slist_free_all(headers);\
+
+    if (NULL!=curl)
+        curl_easy_cleanup(curl);
+
+    return ret;
+}
