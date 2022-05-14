@@ -11,3 +11,7 @@
 
 ## curl_obj
 ### 依赖 libssl cmake
+
+
+## rand_obj
+随机数生产

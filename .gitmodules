@@ -4,3 +4,6 @@
 [submodule "easyLogger_obj/EasyLogger"]
 	path = easyLogger_obj/EasyLogger
 	url = https://github.com/armink/EasyLogger.git
+[submodule "obj_wolfssl/wolfssl"]
+	path = obj_wolfssl/wolfssl
+	url = https://github.com/wolfSSL/wolfssl.git
