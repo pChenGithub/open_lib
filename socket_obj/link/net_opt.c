@@ -14,7 +14,7 @@
 #define LOG_D(tag, format, ...) {fprintf(stdout, format, ##__VA_ARGS__);}
 #define LOGTAG "ifnet_opt"
 
-int get_ip(const char *ifname, char* ip, int len)
+int get_ip(const char *ifname, char* ip, const int len)
 {
     int ret = 0;
     int socketfd = 0;
@@ -54,13 +54,13 @@ socket_close_exit:
     return ret;
 }
 
-int get_gateway(const char *ifname, char *ip, int len)
+int get_gateway(const char *ifname, char *ip, const int len)
 {
     int ret = 0;
     return ret;
 }
 
-int get_mask(const char *ifname, char *ip, int len)
+int get_mask(const char *ifname, char *ip, const int len)
 {
     int ret = 0;
     int socketfd = 0;

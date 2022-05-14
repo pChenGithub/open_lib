@@ -6,3 +6,4 @@ all: ${pro}
 ${pro}: test.c link/net_link.c
 
 clean:
+	rm ${pro}
