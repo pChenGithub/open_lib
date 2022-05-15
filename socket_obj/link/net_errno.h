@@ -17,4 +17,8 @@
 #define NETERR_BIND_FAIL                12  // 执行bind失败
 #define NETERR_PTHREADCREATE_FAIL       13  // 创建线程失败
 #define NETERR_NETLINK_ISRUNNING        14  // netlink服务已经开启（重复开启服务线程）
+#define NETERR_INVALID_IP               15  // 无效的ip地址
+#define NETERR_INVALID_MASK             16  // 无效的掩码
+#define NETERR_INVALID_GATEWAY          17  // 无效的网关地址
+#define NETERR_INVALID_GATEDIST         18  // 无效的网关目标
 #endif

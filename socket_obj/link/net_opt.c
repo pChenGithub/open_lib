@@ -10,6 +10,8 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <net/route.h>
+#include <errno.h>
 
 int get_ip(const char *ifname, char* ip, const int len)
 {
@@ -86,7 +88,81 @@ socket_close_exit:
 int get_gateway(const char *ifname, char *ip, const int len)
 {
     int ret = 0;
+    int socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (socketfd<0)
+        return -NETERR_SOCKET_FAIL;
+    
+    if (ioctl(socketfd, SIOCRTMSG, NULL)<0) {
+        ret = -1;
+        goto socket_close_exit;
+    }
+
+socket_close_exit:
+    close(socketfd);
     return ret;
+}
+
+int set_gateway(const char* ifname, const char* ip, const char* mask, const char* dist) {
+    if (NULL==ifname || NULL==ip)
+        return -NETERR_CHECK_PARAM;
+    int ret = 0;
+    struct rtentry rt;
+    struct sockaddr_in* sockaddr = NULL;
+    memset(&rt, 0, sizeof(rt));
+
+    int socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (socketfd<0)
+        return -NETERR_SOCKET_FAIL;
+        
+    sockaddr = (struct sockaddr_in*)(&rt.rt_gateway);
+    //memset(sockaddr, 0, sizeof(*sockaddr));
+    sockaddr->sin_family = AF_INET;
+    sockaddr->sin_port = 0;
+    if (inet_aton(ip, &sockaddr->sin_addr)<0) {
+        ret = -NETERR_INVALID_GATEWAY;
+        goto socket_close_exit;
+    }
+        
+
+    sockaddr = (struct sockaddr_in *)&rt.rt_dst;
+    sockaddr->sin_family = AF_INET;
+    if (NULL==dist)
+        sockaddr->sin_addr.s_addr = INADDR_ANY;
+    else
+        ret = inet_aton(dist, &sockaddr->sin_addr);
+        //sockaddr->sin_addr.s_addr = inet_addr(dist);
+
+    if (ret<0) {
+        ret = -NETERR_INVALID_GATEDIST;
+        goto socket_close_exit;
+    }
+
+    sockaddr = (struct sockaddr_in *)&rt.rt_genmask;
+    sockaddr->sin_family = AF_INET;
+    
+    if (NULL==mask)
+        sockaddr->sin_addr.s_addr = INADDR_ANY;
+    else 
+        ret = inet_aton(mask, &sockaddr->sin_addr);
+        //sockaddr->sin_addr.s_addr = inet_addr(mask);
+    
+    if (ret<0) {
+        ret = -NETERR_INVALID_MASK;
+        goto socket_close_exit;
+    }
+
+    rt.rt_flags = RTF_UP |RTF_GATEWAY;
+    rt.rt_dev = (char*)ifname;
+
+    if ((ret = ioctl(socketfd, SIOCADDRT, &rt))<0) {
+        printf("xxxxxxx4 %d, %s\n", errno, strerror(errno));
+        goto socket_close_exit;
+    }
+
+socket_close_exit:
+    close(socketfd);
+    return ret;    
+
 }
 
 int get_mask(const char *ifname, char *ip, const int len)
