@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Map;
 import java.util.TreeMap;
+import java_runtime.java_test_sha.*;
 
 public class Test {
     
@@ -48,7 +49,7 @@ public class Test {
         //String strout = "biz_content={\"epid\":\"0\",\"device_sn\":\"cc.4b.73.bd.1e.ac\",\"version\"=\"28265\"}&charset=utf-8&format=json&method=hzsun.facepic.initdata&publickey=123456&sign_type=SHA&timestamp=2021-06-07 15:33:42&version=1.0";
         //String strout = "biz_content={\"epid\":\"0\",\"device_sn\":\"cc.4b.73.bd.1e.ac\"}&charset=utf-8&format=json&method=hzsun.face.version&publickey=123456&sign_type=RSA2&timestamp=1970-01-02 05:14:29&version=1.0";
         // String strout = "Method=getCardsChangeInfo&biz_content={\"protocolVersion\":\"1\",\"serialNum\":\"cc4b73bd1eac\",\"deviceCardsChangeFixid\":\"0\"}&publickey=123456";
-        String strout = "biz_content={\"modelnum\":\"0\",\"typenum\":\"59\"}&charset=utf-8&format=json&method=hzsun.device.userinfo&publickey=123456&sign_type=RSA2&timestamp=2021-06-07 15:33:42&version=1.0";
+        String strout = "biz_content={\"Timegroupversion\":\"0\",\"Sysversion\":\"18\",\"FireStatus\":\"0\",\"Timetempletversion\":\"2\",\"Accrightversion\":\"4040\",\"Devicetype\":\"1\",\"Accversion\":\"2026\",\"Doorholidayversion\":\"6\",\"Stanum\":\"3\",\"Staip\":\"d41243627940\",\"Terversion\":\"7\",\"Uneventcnt\":\"0\",\"Doorstatus\":\"1\",\"Doorversion\":\"20\"}&charset=utf-8&format=json&method=VersionInfo&publickey=123456&sign_type=RSA2&timestamp=2021-12-14 14:01:19&version=1.0";
 /** 
         raw = content.getBytes();
         for (int i=0;i<raw.length;i++) {
@@ -62,7 +63,7 @@ public class Test {
         raw = Sha1Utils.shaEncode(strout); // 1
         System.out.println(MyUtils.stringToHexString(raw.toString()));
         for (int i=0;i<raw.length;i++) {
-            System.out.printf("%02x ", raw[i]);
+            System.out.printf("%d ", raw[i]);
         }
         System.out.printf("\n\n\n");
 
