@@ -88,14 +88,22 @@ socket_close_exit:
 int get_gateway(const char *ifname, char *ip, const int len)
 {
     int ret = 0;
+    struct rtentry rt;
+    struct sockaddr_in* sockaddr = NULL;
+    memset(&rt, 0, sizeof(rt));
     int socketfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (socketfd<0)
         return -NETERR_SOCKET_FAIL;
     
-    if (ioctl(socketfd, SIOCRTMSG, NULL)<0) {
-        ret = -1;
+    if (ioctl(socketfd, SIOCRTMSG, &rt)<0) {
+        ret = -NETERR_SOCKET_RTMSG;
+        printf("xxxxxxx4 %d, %s\n", errno, strerror(errno));
         goto socket_close_exit;
     }
+
+    char* devname = rt.rt_dev;
+    sockaddr = (struct sockaddr_in*)(&rt.rt_gateway);
+    printf("名称 %s，ip %s\n", devname, inet_ntoa(sockaddr->sin_addr));
 
 socket_close_exit:
     close(socketfd);
@@ -156,6 +164,7 @@ int set_gateway(const char* ifname, const char* ip, const char* mask, const char
 
     if ((ret = ioctl(socketfd, SIOCADDRT, &rt))<0) {
         printf("xxxxxxx4 %d, %s\n", errno, strerror(errno));
+        ret = -NETERR_SOCKET_ADDRT;
         goto socket_close_exit;
     }
 

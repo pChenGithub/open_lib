@@ -196,4 +196,8 @@ int rm_netlink_listen_ev(NLEV_TYPE ev) {
     return 0;
 }
 
+int nl_getGateway() {
+    return 0;
+}
+
 

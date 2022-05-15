@@ -21,4 +21,6 @@
 #define NETERR_INVALID_MASK             16  // 无效的掩码
 #define NETERR_INVALID_GATEWAY          17  // 无效的网关地址
 #define NETERR_INVALID_GATEDIST         18  // 无效的网关目标
+#define NETERR_SOCKET_ADDRT             19  // socket设置网关失败
+#define NETERR_SOCKET_RTMSG             20  // socket获取网关失败
 #endif

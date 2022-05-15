@@ -13,6 +13,7 @@ typedef struct {
     int link;
 } NETLINK_CB_PARAM;
 
+// netlink的监听事件类型
 typedef enum {
     NLEV_LINK = 0,
     NLEV_MAX,
@@ -23,3 +24,6 @@ int start_netlink_listen();
 int stop_netlink_listen();
 int set_netlink_listen_ev(NLEV_TYPE ev, hand_netlink_ev cb);
 int rm_netlink_listen_ev(NLEV_TYPE ev);
+
+// 基于libnl获取网络信息
+int nl_getGateway();
