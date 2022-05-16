@@ -14,7 +14,7 @@ ${pro}: test.c link/net_link.c link/net_opt.c
 
 ${pro_nl} : test_nl.c link/net_netlink.c
 
-${pro_gate} : test_gate.c link/net_opt.c 
+${pro_gate} : test_gate.c link/net_netlink.c
 
 clean:
-	rm ${pro}
+	rm ${pro} ${pro_nl} ${pro_gate} 

@@ -9,6 +9,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <net/if.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 #define NL_THREAD_RUNNING   0x01
 typedef struct netlink_listen {
@@ -196,8 +201,100 @@ int rm_netlink_listen_ev(NLEV_TYPE ev) {
     return 0;
 }
 
-int nl_getGateway() {
-    return 0;
+// struct nlmsghdr
+// struct rtmsg
+#define GETROUTE_BUFFSIZE   1024
+int nl_getGateways(const char* dist, const char* devname, ROUTE_LIST* routes, int* routeslen) {
+    if (NULL==routes || NULL==routeslen || *routeslen<=0)
+        return -NETERR_CHECK_PARAM;
+    int ret = 0;
+    struct rtattr *rtAttr = NULL;
+    struct nlmsghdr* nlmsg = (struct nlmsghdr*)calloc(GETROUTE_BUFFSIZE, 1);
+    if (NULL==nlmsg)
+        return -NETERR_REQMEM;
+    struct rtmsg* rt = NLMSG_DATA(nlmsg);
+
+    int socketfd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+    if (socketfd<0) {
+        ret = -NETERR_SOCKET_FAIL;
+        goto free_exit;
+    }
+
+    nlmsg->nlmsg_flags = NLM_F_DUMP|NLM_F_REQUEST;
+    nlmsg->nlmsg_len = NLMSG_LENGTH(sizeof(struct rtmsg));
+    nlmsg->nlmsg_pid = getpid();
+    nlmsg->nlmsg_seq = 0;
+    nlmsg->nlmsg_type = RTM_GETROUTE;
+
+    if (send(socketfd, nlmsg, nlmsg->nlmsg_len, 0)<0) {
+        ret = -NETERR_SOCKET_SENDFAIL;
+        goto closefd_exit;
+    }
+
+    int recvlen = 0;
+    char* p = (char*)nlmsg;
+    while (ret=recv(socketfd, p+recvlen, GETROUTE_BUFFSIZE-recvlen, 0)) {
+        if (0==ret)
+            break;
+        else if (ret<0) {
+            ret = -NETERR_SOCKET_RECVFAIL;
+            goto closefd_exit;
+        }
+        recvlen += ret;
+    }
+
+    int i = 0;
+    struct nlmsghdr* pnl = nlmsg;
+    // 用RT_TABLE_MAIN过滤，第一个循环，有几个网关就会循环几次
+    for (;NLMSG_OK(pnl, recvlen);pnl=NLMSG_NEXT(pnl, recvlen)) {
+        // 获取rt内容长度
+        int rtlen = RTM_PAYLOAD(pnl);
+        rt = NLMSG_DATA(pnl);
+        if((rt->rtm_family!=AF_INET)||(rt->rtm_table!=RT_TABLE_MAIN))
+            continue;
+
+        if (i>=(*routeslen)) {
+            ret = -NETERR_BUFFER_NOTENOUGH;
+            *routeslen = i;
+            goto closefd_exit;
+        }
+
+        rtAttr = RTM_RTA(rt);
+        //printf("\n\n\n");
+        memcpy(routes[i].dist, "default", 8);
+        memcpy(routes[i].gate, "*", 2);
+        for (;RTA_OK(rtAttr, rtlen);rtAttr=RTA_NEXT(rtAttr, rtlen)) {
+            //printf("rta类型 %d, 长度 %d, rt内容长度 %d\n", rtAttr->rta_type, rtAttr->rta_len, rtlen);
+            
+            if (RTA_GATEWAY==rtAttr->rta_type) {
+                // 类型是网关，保存网关
+                struct in_addr* in = (struct in_addr*)RTA_DATA(rtAttr);
+                memcpy(routes[i].gate, inet_ntoa(*in), IP_STR_MAXLEN);
+            } else if (RTA_OIF==rtAttr->rta_type) {
+                // 类型是接口名
+                if_indextoname(*(int*)RTA_DATA(rtAttr), routes[i].devname);
+            } else if (RTA_DST==rtAttr->rta_type) {
+                // 类型是目标
+                struct in_addr* in = (struct in_addr*)RTA_DATA(rtAttr);
+                memcpy(routes[i].dist, inet_ntoa(*in), IP_STR_MAXLEN);
+            }
+        }
+
+        if (NULL!=dist && strncmp(dist, routes[i].dist, strlen(dist)+1))
+            continue;
+        if (NULL!=devname && strncmp(devname, routes[i].devname, strlen(devname)+1))
+            continue;
+        i++;
+    }
+    *routeslen = i;
+
+closefd_exit:
+    close(socketfd);
+    socketfd = 0;
+free_exit:
+    free(nlmsg);
+    nlmsg = NULL;    
+    return ret;
 }
 
 

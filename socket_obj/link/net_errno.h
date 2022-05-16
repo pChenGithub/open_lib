@@ -23,4 +23,10 @@
 #define NETERR_INVALID_GATEDIST         18  // 无效的网关目标
 #define NETERR_SOCKET_ADDRT             19  // socket设置网关失败
 #define NETERR_SOCKET_RTMSG             20  // socket获取网关失败
+#define NETERR_REQMEM                   21  // 申请内存失败
+#define NETERR_SOCKET_RECVFAIL          22  // 对socket执行recv失败
+#define NETERR_SOCKET_SENDFAIL          23  // 对socket执行send失败
+#define NETERR_INVALID_NLMSG            24  // 无效的nlmsg
+#define NETERR_INVALID_RTMSG            25  // 无效的rtmsg
+#define NETERR_BUFFER_NOTENOUGH         26  // 输入缓存空间不足
 #endif

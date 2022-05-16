@@ -25,5 +25,14 @@ int stop_netlink_listen();
 int set_netlink_listen_ev(NLEV_TYPE ev, hand_netlink_ev cb);
 int rm_netlink_listen_ev(NLEV_TYPE ev);
 
-// 基于libnl获取网络信息
-int nl_getGateway();
+// 基于netlink获取网络信息
+#define IP_STR_MAXLEN   16
+typedef struct {
+    char dist[IP_STR_MAXLEN];
+    char gate[IP_STR_MAXLEN];
+    char mask[IP_STR_MAXLEN];
+    char devname[IP_STR_MAXLEN];
+} ROUTE_LIST;
+// routeslen 带入ROUTE_LIST的长度，并返回最终的实际数量
+int nl_getGateways(const char* dist, const char* devname, ROUTE_LIST* routes, int* routeslen);
+
