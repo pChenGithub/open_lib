@@ -31,4 +31,6 @@
 #define NETERR_BUFFER_NOTENOUGH         26  // 输入缓存空间不足
 #define NETERR_FGETS_FALI               27  // 执行fges失败
 #define NETERR_FWRITE_FALI              28  // 执行fwrite失败
+#define NETERR_SOCKET_GIFFLAGS_FAIL     29   // socket获取ifflags(flag)失败
+#define NETERR_SOCKET_SIFFLAGS_FAIL     29   // socket设置ifflags(flag)失败
 #endif

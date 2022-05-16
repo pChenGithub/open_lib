@@ -235,4 +235,73 @@ socket_close_exit:
     return ret;
 }
 
+int get_link(const char* ifname) {
+    int ret = 0;
+    int socketfd = 0;
+    // struct ifreq，保存了网络接口的信息，包括名字、ip、掩码、广播。链路状态、mac地址
+    // struct ifconf 理解为ifreq的集合，但是ifreq的内存需要用户指定
+    struct ifreq ifcu_req;
+    // 检查参数
+    if (NULL==ifname)
+        return -NETERR_CHECK_PARAM;
+    // 获取socket，
+    socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (socketfd<0)
+        return -NETERR_SOCKET_FAIL;
+
+    memcpy(ifcu_req.ifr_ifrn.ifrn_name, ifname, strlen(ifname)+1);
+    if (ioctl(socketfd, SIOCGIFFLAGS, &ifcu_req)<0) {
+        ret = -NETERR_SOCKET_GIFFLAGS_FAIL;
+        goto socket_close_exit;
+    }
+
+    // 返回flag
+    if (ifcu_req.ifr_ifru.ifru_flags&IFF_RUNNING) {
+        ret = NET_LINK_UP; // up
+    } else {
+        ret = NET_LINK_DOWN; // down
+    }
+
+socket_close_exit:
+    close(socketfd);
+    return ret;
+}
+
+int set_enable(const char* ifname, int opt) {
+    int ret = 0;
+    int socketfd = 0;
+    // struct ifreq，保存了网络接口的信息，包括名字、ip、掩码、广播。链路状态、mac地址
+    // struct ifconf 理解为ifreq的集合，但是ifreq的内存需要用户指定
+    struct ifreq ifcu_req;
+    // 检查参数
+    if (NULL==ifname)
+        return -NETERR_CHECK_PARAM;
+    // 获取socket，
+    socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (socketfd<0)
+        return -NETERR_SOCKET_FAIL;
+
+    switch (opt)
+    {
+    case NET_LINK_UP:
+        ifcu_req.ifr_ifru.ifru_flags |= (IFF_RUNNING|IFF_UP);
+        break;
+    case NET_LINK_DOWN:
+        ifcu_req.ifr_ifru.ifru_flags &= (~IFF_RUNNING);
+        break;
+    default:
+        break;
+    }
+    
+    memcpy(ifcu_req.ifr_ifrn.ifrn_name, ifname, strlen(ifname)+1);
+    if (ioctl(socketfd, SIOCSIFFLAGS, &ifcu_req)<0) {
+        ret = -NETERR_SOCKET_SIFFLAGS_FAIL;
+        //goto socket_close_exit;
+    }
+
+socket_close_exit:
+    close(socketfd);
+    return ret;
+}
+
 

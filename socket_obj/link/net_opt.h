@@ -3,7 +3,7 @@
 */
 #ifndef _NET_OPT_H_
 #define _NET_OPT_H_
-
+#include "net_def.h"
 // 获取指定ifname的ip地址
 int get_ip(const char* ifname, char *ip, int len);
 // 设置指定ifname的ip地址
@@ -22,5 +22,9 @@ int set_mask(const char* ifname, const char *ip);
 int get_mac(const char* ifname, char* mac, int maclen);
 // 设置指定ifname的mac地址
 int set_mac(const char* ifname, const char* mac);
+// 获取指定ifname的link状态
+int get_link(const char* ifname);
+// 设置指定ifname的状态
+int set_enable(const char* ifname, int opt);
 
 #endif
