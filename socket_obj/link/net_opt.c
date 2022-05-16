@@ -236,9 +236,3 @@ socket_close_exit:
 }
 
 
-int nl_getGateway()
-{
-
-}
-
-
