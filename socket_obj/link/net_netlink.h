@@ -4,6 +4,7 @@
  * 并且提供跟内核通信的接口
  * 
 */
+#include "net_def.h"
 // link事件的回调参数
 #define NET_LINK_UP         0
 #define NET_LINK_DOWN       1
@@ -26,7 +27,6 @@ int set_netlink_listen_ev(NLEV_TYPE ev, hand_netlink_ev cb);
 int rm_netlink_listen_ev(NLEV_TYPE ev);
 
 // 基于netlink获取网络信息
-#define IP_STR_MAXLEN   16
 typedef struct {
     char dist[IP_STR_MAXLEN];
     char gate[IP_STR_MAXLEN];
