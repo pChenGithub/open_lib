@@ -2,12 +2,13 @@ CC = /home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf
 pro ?= test
 pro_nl ?= test_nl
 pro_gate ?= test_gate
+pro_dns ?= test_dns
 
 ARCH=arm
 CFLAGS += -L/home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/arm-linux-gnueabihf/libc/lib/arm-linux-gnueabihf -lpthread
 
 
-all: ${pro} ${pro_nl} ${pro_gate}
+all: ${pro} ${pro_nl} ${pro_gate} ${pro_dns}
 #	$(DEBUGGER) ./${pro_nl} ${ARGS}
 
 ${pro}: test.c link/net_link.c link/net_opt.c
@@ -16,5 +17,7 @@ ${pro_nl} : test_nl.c link/net_netlink.c
 
 ${pro_gate} : test_gate.c link/net_netlink.c
 
+${pro_dns} : test_dns.c link/net_dns.c
+
 clean:
-	rm ${pro} ${pro_nl} ${pro_gate} 
+	rm ${pro} ${pro_nl} ${pro_gate} ${pro_dns}

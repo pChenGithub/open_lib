@@ -29,4 +29,6 @@
 #define NETERR_INVALID_NLMSG            24  // 无效的nlmsg
 #define NETERR_INVALID_RTMSG            25  // 无效的rtmsg
 #define NETERR_BUFFER_NOTENOUGH         26  // 输入缓存空间不足
+#define NETERR_FGETS_FALI               27  // 执行fges失败
+#define NETERR_FWRITE_FALI              28  // 执行fwrite失败
 #endif
