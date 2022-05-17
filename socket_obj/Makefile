@@ -4,12 +4,14 @@ pro_nl ?= test_nl
 pro_gate ?= test_gate
 pro_dns ?= test_dns
 pro_link ?= test_link
+pro_dhcp ?= test_dhcp
 
 ARCH=arm
 CFLAGS += -L/home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/arm-linux-gnueabihf/libc/lib/arm-linux-gnueabihf -lpthread
+CFLAGS += -I../exeShell_obj/
 
 
-all: ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} 
+all: ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} ${pro_dhcp} 
 #	$(DEBUGGER) ./${pro_nl} ${ARGS}
 
 ${pro}: test.c link/net_link.c link/net_opt.c
@@ -22,5 +24,7 @@ ${pro_dns} : test_dns.c link/net_dns.c
 
 ${pro_link} : test_link.c link/net_opt.c
 
+${pro_dhcp} : test_dhcp.c link/net_dhcp.c ../exeShell_obj/mixShell.c
+
 clean:
-	rm ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} 
+	rm ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} ${pro_dhcp} 

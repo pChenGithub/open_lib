@@ -32,5 +32,6 @@
 #define NETERR_FGETS_FALI               27  // 执行fges失败
 #define NETERR_FWRITE_FALI              28  // 执行fwrite失败
 #define NETERR_SOCKET_GIFFLAGS_FAIL     29   // socket获取ifflags(flag)失败
-#define NETERR_SOCKET_SIFFLAGS_FAIL     29   // socket设置ifflags(flag)失败
+#define NETERR_SOCKET_SIFFLAGS_FAIL     30   // socket设置ifflags(flag)失败
+#define NETERR_FINDNO_ENTRY             31   // 没有找到合适节点
 #endif
