@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "link/net_opt.h"
 int main(int argc, char const *argv[])
 {

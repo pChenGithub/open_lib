@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include "link/net_dhcp.h"
 
 static int hand_ret(DHCP_STATUS sta) {

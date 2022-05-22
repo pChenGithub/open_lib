@@ -1,5 +1,6 @@
 #include "net_opt.h"
 #include "net_errno.h"
+#include "net_netlink.h"
 #include <stdio.h>
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
@@ -131,7 +132,6 @@ int set_gateway(const char* ifname, const char* ip, const char* mask, const char
         goto socket_close_exit;
     }
         
-
     sockaddr = (struct sockaddr_in *)&rt.rt_dst;
     sockaddr->sin_family = AF_INET;
     if (NULL==dist)
@@ -162,16 +162,135 @@ int set_gateway(const char* ifname, const char* ip, const char* mask, const char
     rt.rt_flags = RTF_UP |RTF_GATEWAY;
     rt.rt_dev = (char*)ifname;
 
-    if ((ret = ioctl(socketfd, SIOCADDRT, &rt))<0) {
-        printf("xxxxxxx4 %d, %s\n", errno, strerror(errno));
-        ret = -NETERR_SOCKET_ADDRT;
+    if ((ret = ioctl(socketfd, SIOCADDRT, &rt))==0) 
         goto socket_close_exit;
-    }
+
+    printf("设置网关失败 %d, %s\n", errno, strerror(errno));
+    ret = -NETERR_SOCKET_ADDRT;
+    if (17==errno)
+        ret = -NETERR_SOCKET_ADDRT_EXSIT;
 
 socket_close_exit:
     close(socketfd);
     return ret;    
+}
 
+int replace_gateway(const char* ifname, const char* ip, const char* mask, const char* dist) {
+    int ret = 0;
+    if (NULL==ifname || NULL==ip)
+        return -NETERR_CHECK_PARAM;
+
+    if ((ret = set_gateway(ifname, ip, mask, dist))==0)
+        goto exit;
+    if (-NETERR_SOCKET_ADDRT_EXSIT!=ret)
+        goto exit;
+    
+    const char* tmpdist = dist;
+    if (NULL==dist)
+        tmpdist = "default";
+    // 清空dist相同的网关
+    ROUTE_LIST list[10];
+    int routenum = 10;
+    memset(&list, 0, sizeof(list));
+    ret = nl_getGateways((const char*)tmpdist, ifname, NULL, list, &routenum);
+    if (ret<0 && -NETERR_BUFFER_NOTENOUGH!=ret) {
+        printf("ret xxx111 %d\n", ret);
+        goto exit;
+    }
+    printf("获取网关个数 %d\n", routenum);
+
+    // 清空gate相同的网关
+    int count = 10-routenum;
+    ret = nl_getGateways(NULL, ifname, ip, list+routenum, &count);
+    if (ret<0 && -NETERR_BUFFER_NOTENOUGH!=ret) {
+        printf("ret xxx111 %d\n", ret);
+        goto exit;
+    }
+
+    routenum += count;
+
+    printf("获取网关个数 %d\n", routenum);
+    // 删除网关
+    if (0==routenum) {
+        ret = -NETERR_SOCKET_ADDRT;
+        goto exit;
+    }
+
+    for (int i=0;i<routenum;i++) {
+        printf("获取到网关 dist %s, gate %s, mask %s， devname %s\n",
+            list[i].dist, list[i].gate, list[i].mask, list[i].devname);
+
+        if (ret = del_gateway(ifname, list[i].dist, "0.0.0.0")==0)
+            continue;
+
+        if (ret = del_gateway(ifname, list[i].dist, "255.0.0.0")==0)
+            continue;
+
+        if (ret = del_gateway(ifname, list[i].dist, "255.255.0.0")==0)
+            continue;
+
+        if (ret = del_gateway(ifname, list[i].dist, "255.255.255.0")==0)
+            continue;
+
+        if (ret = del_gateway(ifname, list[i].dist, "255.255.255.255")==0)
+            continue;
+    }
+
+set_new_gate:    
+    // 重新设置网关
+    ret = set_gateway(ifname, ip, mask, dist);
+exit:
+    return ret;
+}
+
+int del_gateway(const char* ifname, const char* dist, const char* mask) {
+
+    int ret = 0;
+    struct rtentry rt;
+    struct sockaddr_in* sockaddr = NULL;
+    memset(&rt, 0, sizeof(rt));
+
+    int socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (socketfd<0)
+        return -NETERR_SOCKET_FAIL;
+        
+    sockaddr = (struct sockaddr_in*)(&rt.rt_dst);
+    sockaddr->sin_family = AF_INET;
+
+    if (NULL==dist)
+        sockaddr->sin_addr.s_addr = INADDR_ANY;
+    else
+        ret = inet_aton(dist, &sockaddr->sin_addr);
+
+    if (ret<0) {
+        ret = -NETERR_INVALID_GATEDIST;
+        goto socket_close_exit;
+    }
+
+    sockaddr = (struct sockaddr_in *)&rt.rt_genmask;
+    sockaddr->sin_family = AF_INET;
+    
+    if (NULL==mask)
+        sockaddr->sin_addr.s_addr = INADDR_ANY;
+    else 
+        ret = inet_aton(mask, &sockaddr->sin_addr);
+    
+    if (ret<0) {
+        ret = -NETERR_INVALID_MASK;
+        goto socket_close_exit;
+    }
+
+    if (NULL!=ifname)
+        rt.rt_dev = (char*)ifname;
+    if ((ret = ioctl(socketfd, SIOCDELRT, &rt))<0) {
+        printf("删除网关失败 %d, %s\n", errno, strerror(errno));
+        ret = -NETERR_SOCKET_ADDRT;
+        goto socket_close_exit;
+    }
+
+socket_close_exit:  
+    close(socketfd);
+    return 0;
 }
 
 int get_mask(const char *ifname, char *ip, const int len)
