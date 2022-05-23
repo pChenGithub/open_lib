@@ -204,7 +204,7 @@ int rm_netlink_listen_ev(NLEV_TYPE ev) {
 // struct nlmsghdr
 // struct rtmsg
 #define GETROUTE_BUFFSIZE   1024
-int nl_getGateways(const char* dist, const char* devname, ROUTE_LIST* routes, int* routeslen) {
+int nl_getGateways(const char* dist, const char* devname, const char* gate, ROUTE_LIST* routes, int* routeslen) {
     if (NULL==routes || NULL==routeslen || *routeslen<=0)
         return -NETERR_CHECK_PARAM;
     int ret = 0;
@@ -250,21 +250,25 @@ int nl_getGateways(const char* dist, const char* devname, ROUTE_LIST* routes, in
         // 获取rt内容长度
         int rtlen = RTM_PAYLOAD(pnl);
         rt = NLMSG_DATA(pnl);
+#if 1
         if((rt->rtm_family!=AF_INET)||(rt->rtm_table!=RT_TABLE_MAIN))
             continue;
-
+#endif
         if (i>=(*routeslen)) {
             ret = -NETERR_BUFFER_NOTENOUGH;
             *routeslen = i;
+            printf("ret xxx %d\n", ret);
             goto closefd_exit;
         }
+        printf("处理一条数据\n");
 
         rtAttr = RTM_RTA(rt);
         //printf("\n\n\n");
         memcpy(routes[i].dist, "default", 8);
         memcpy(routes[i].gate, "*", 2);
         for (;RTA_OK(rtAttr, rtlen);rtAttr=RTA_NEXT(rtAttr, rtlen)) {
-            //printf("rta类型 %d, 长度 %d, rt内容长度 %d\n", rtAttr->rta_type, rtAttr->rta_len, rtlen);
+            struct in_addr* in1 = (struct in_addr*)RTA_DATA(rtAttr);
+            //printf("rta类型 %d, 长度 %d, rt内容长度 %d, 内容 %s\n", rtAttr->rta_type, rtAttr->rta_len, rtlen, inet_ntoa(*in1));
             
             if (RTA_GATEWAY==rtAttr->rta_type) {
                 // 类型是网关，保存网关
@@ -283,6 +287,8 @@ int nl_getGateways(const char* dist, const char* devname, ROUTE_LIST* routes, in
         if (NULL!=dist && strncmp(dist, routes[i].dist, strlen(dist)+1))
             continue;
         if (NULL!=devname && strncmp(devname, routes[i].devname, strlen(devname)+1))
+            continue;
+        if (NULL!=gate && strncmp(gate, routes[i].gate, strlen(gate)+1))
             continue;
         i++;
     }

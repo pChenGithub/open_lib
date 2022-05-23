@@ -3,6 +3,10 @@
  * 监听开启一个独立线程，并提供回调函数返回结果
  * 并且提供跟内核通信的接口
  * 
+ * rtnetlink 直接使用netlink应该比较难用
+ * libnetlink
+ * 不过libnetlink应该还是比较难用的，所以它man page上面建议用netfilter开源的 libmnl
+ * 
 */
 #ifndef __NET_NETLINK_H__
 #define __NET_NETLINK_H__
@@ -38,9 +42,14 @@ typedef struct {
     char mask[IP_STR_MAXLEN];
     char devname[IP_STR_MAXLEN];
 } ROUTE_LIST;
+
 // routeslen 带入ROUTE_LIST的长度，并返回最终的实际数量
-int nl_getGateways(const char* dist, const char* devname, ROUTE_LIST* routes, int* routeslen);
+// dist，devname，gate都是过滤条件，可以为空
+int nl_getGateways(const char* dist, const char* devname, const char* gate, ROUTE_LIST* routes, int* routeslen);
 #ifdef __cplusplus
 }
 #endif
 #endif
+
+
+

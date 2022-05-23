@@ -15,6 +15,10 @@ int set_ip(const char* ifname, const char* ip);
 //int get_gateway(const char* ifname, char *ip, const int len);
 // 设置指定ifname网关
 int set_gateway(const char* ifname, const char* ip, const char* mask, const char* dist);
+// 设置指定ifname网关，如果存在就删除
+int replace_gateway(const char* ifname, const char* ip, const char* mask, const char* dist);
+// 指定ifname删除网关
+int del_gateway(const char* ifname, const char* dist, const char* mask);
 // 执行shell方式获取网关
 //int get_gateway_shell(const char* ifname, char* ip, const int len);
 // 获取指定ifname的掩码
