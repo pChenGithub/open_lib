@@ -4,6 +4,11 @@
  * 并且提供跟内核通信的接口
  * 
 */
+#ifndef __NET_NETLINK_H__
+#define __NET_NETLINK_H__
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "net_def.h"
 // link事件的回调参数
 #define NET_LINK_UP         0
@@ -35,4 +40,7 @@ typedef struct {
 } ROUTE_LIST;
 // routeslen 带入ROUTE_LIST的长度，并返回最终的实际数量
 int nl_getGateways(const char* dist, const char* devname, ROUTE_LIST* routes, int* routeslen);
-
+#ifdef __cplusplus
+}
+#endif
+#endif

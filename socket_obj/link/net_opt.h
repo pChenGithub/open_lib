@@ -3,6 +3,9 @@
 */
 #ifndef _NET_OPT_H_
 #define _NET_OPT_H_
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "net_def.h"
 // 获取指定ifname的ip地址
 int get_ip(const char* ifname, char *ip, int len);
@@ -27,4 +30,10 @@ int get_link(const char* ifname);
 // 设置指定ifname的状态
 int set_enable(const char* ifname, int opt);
 
+// 批量设置
+// 检查ip合法性
+int isIpValid(const char* ip);
+#ifdef __cplusplus
+}
+#endif
 #endif

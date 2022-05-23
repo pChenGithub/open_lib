@@ -304,4 +304,24 @@ socket_close_exit:
     return ret;
 }
 
+#include <regex.h>
+static const char* pattern = "^((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)$";
+int isIpValid(const char* ip) {
+    if (NULL==ip)
+        return -NETERR_CHECK_PARAM;
+    int ret = 0;
+    regex_t reg;
+    regmatch_t match[1] = {0};
+
+    memset(&reg, 0, sizeof(reg));
+    if (0!=regcomp(&reg, pattern, REG_EXTENDED))
+        return -NETERR_REGCOMP_FAIL;
+
+    if (REG_NOMATCH==regexec(&reg, ip, strlen(ip), match, 1, 0))
+        ret = -NETERR_REGEXEC_FAIL;
+
+    regfree(&reg);
+    return ret;
+}
+
 

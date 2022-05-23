@@ -34,4 +34,6 @@
 #define NETERR_SOCKET_GIFFLAGS_FAIL     29   // socket获取ifflags(flag)失败
 #define NETERR_SOCKET_SIFFLAGS_FAIL     30   // socket设置ifflags(flag)失败
 #define NETERR_FINDNO_ENTRY             31   // 没有找到合适节点
+#define NETERR_REGCOMP_FAIL             32   // 编译正则表达式失败
+#define NETERR_REGEXEC_FAIL             33   // 正则表达式匹配失败
 #endif
