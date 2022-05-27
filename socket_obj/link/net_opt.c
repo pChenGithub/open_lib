@@ -436,7 +436,7 @@ int isIpValid(const char* ip) {
     if (0!=regcomp(&reg, pattern, REG_EXTENDED))
         return -NETERR_REGCOMP_FAIL;
 
-    if (REG_NOMATCH==regexec(&reg, ip, strlen(ip), match, 1, 0))
+    if (REG_NOMATCH==regexec(&reg, ip, 1, match, 0))
         ret = -NETERR_REGEXEC_FAIL;
 
     regfree(&reg);
