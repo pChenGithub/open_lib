@@ -165,6 +165,7 @@ int uart_setopt(int fd, BAUDRATE_TYPE baudrate, STOPBIT_TYPE bit, EVENT_TYPE eve
     options.c_oflag &= ~OPOST;
     options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
+#if 0
     // 参考312设置
     options.c_lflag&=~(ICANON|ECHO|ECHOE|ISIG);
     options.c_oflag&=~OPOST;
@@ -182,6 +183,7 @@ int uart_setopt(int fd, BAUDRATE_TYPE baudrate, STOPBIT_TYPE bit, EVENT_TYPE eve
     options.c_cflag |= PARODD;
     options.c_cflag |= CMSPAR;
     options.c_iflag |= INPCK;      /* Disnable parity checking */
+#endif
 
     // 清空终端未完成的数据
     tcflush(fd, TCIFLUSH);
