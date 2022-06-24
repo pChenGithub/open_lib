@@ -215,12 +215,14 @@ int uart_read_timeout(int fd, char* buff, int bufflen, int ms) {
     int ret = 0;
     fd_set rfds;
     struct timeval tv;
+    // 每次循环都要清空集合，否则不能检测描述符变化
     FD_ZERO(&rfds);
     FD_SET(fd, &rfds);
     // 设置超时
     tv.tv_sec = ms/1000;
     tv.tv_usec = 1000*(ms%1000);
 
+    // 第一个参数,监听最大描述符值加1
     ret = select(fd+1, &rfds, NULL, NULL, &tv);
     if (ret<0) {
         return -UARTOPTERR_SELECT_ERR;
@@ -229,7 +231,7 @@ int uart_read_timeout(int fd, char* buff, int bufflen, int ms) {
         return -UARTOPTERR_SELECT_TIMEOUT;
     }
 
-    // 读取串口
+    // 读取串口,这里如果不读,select会一直返回
     ret = read(fd, buff, bufflen);
     if (ret<0)
         return -UARTOPTERR_READ_FAIL;
