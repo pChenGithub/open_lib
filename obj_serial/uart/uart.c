@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <termios.h>
+#include <sys/select.h>
 
 int uart_open(const char* dev, BAUDRATE_TYPE baudrate, STOPBIT_TYPE bit, EVENT_TYPE even) {
     int ret = 0;
@@ -205,3 +206,48 @@ int uart_read(int fd, char* buff, int bufflen) {
         return -UARTOPTERR_READ_ZERO;
     return ret;
 }
+
+int uart_read_timeout(int fd, char* buff, int bufflen, int ms) {
+
+    if (fd<0 || NULL==buff || bufflen<=0)
+        return -UARTOPTERR_CHECKPARAM;
+
+    int ret = 0;
+    fd_set rfds;
+    struct timeval tv;
+    // 每次循环都要清空集合，否则不能检测描述符变化
+    FD_ZERO(&rfds);
+    FD_SET(fd, &rfds);
+    // 设置超时
+    tv.tv_sec = ms/1000;
+    tv.tv_usec = 1000*(ms%1000);
+
+    // 第一个参数,监听最大描述符值加1
+    ret = select(fd+1, &rfds, NULL, NULL, &tv);
+    if (ret<0) {
+        return -UARTOPTERR_SELECT_ERR;
+    } else if (0==ret) {
+        // 超时
+        return -UARTOPTERR_SELECT_TIMEOUT;
+    }
+
+    // 读取串口,这里如果不读,select会一直返回
+    ret = read(fd, buff, bufflen);
+    if (ret<0)
+        return -UARTOPTERR_READ_FAIL;
+
+    if (0==ret)
+        return -UARTOPTERR_READ_ZERO;
+    return ret;
+}
+
+int uart_write(int fd, char* buff, int bufflen) {
+    if (fd<0 || NULL==buff || bufflen<=0)
+        return -UARTOPTERR_CHECKPARAM;
+    
+    int ret = write(fd, buff, bufflen);
+    if (ret<0)
+        return -UARTOPTERR_READ_FAIL;
+    return ret;
+}
+

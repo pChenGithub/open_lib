@@ -48,6 +48,8 @@ int exeShellWait(const char* cmd, shell_ret_line handret) {
     char* retstr = calloc(RETSTR_BUFF_LEN, 1);
     // 读取执行结果
     // 需要命令里面控制获取结果行数，每次获取最新行
+    // 初始化ret,如果没有获取到命令结果,也视为失败
+    ret = -MIXSHELLERR_EXESHELL_FAIL;
     while (NULL!=fgets(retstr, RETSTR_BUFF_LEN-1, fp)) {
         ret = handret(retstr);
         if (SHELL_RET_ERR==ret) {
