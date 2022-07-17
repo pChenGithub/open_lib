@@ -21,6 +21,8 @@ SHELL_RET_TYPE hand_retstr(const char* linestr) {
     //printf("shell结果 %s\n", linestr);
     if (!strncmp(linestr, "No lease, failing", 17))
         return SHELL_RET_ERR;
+    else if (!strncmp(linestr, "No lease, failing", 17))
+        return SHELL_RET_OK;
     return SHELL_RET_IGNORE;
 }
 
@@ -75,7 +77,7 @@ int start_dhcp(const char* ifname, int timeouts, hand_dhcpstatus hand) {
     if (index<0)
         return -NETERR_FINDNO_ENTRY;
 
-    pcmd +=index;
+    pcmd += index;
     pcmd->timeouts = timeouts;
     pcmd->hand = hand;
     snprintf(pcmd->ifname, IFNAME_LEN, "%s", ifname);
@@ -88,4 +90,27 @@ int start_dhcp(const char* ifname, int timeouts, hand_dhcpstatus hand) {
     return 0;
 }
 
-int stop_dhcp(const char* ifname);
+// 线程接口说明 https://blog.csdn.net/u011418878/article/details/70049873
+int stop_dhcp(const char* ifname) {
+
+    if (NULL==ifname)
+        return -NETERR_CHECK_PARAM;
+
+    int i = 0;
+    DHCP_PTHREAD* pcmd = cmd_entry;
+
+    for (i=0;i<MAX_DHCP_COUNT;i++) {
+        if (DIRTY_FLAG&pcmd[i].flag && !strncmp(pcmd[i].ifname, ifname, strlen(ifname)+1))
+            break;
+    }
+
+    pcmd += i;
+    if (0!=pthread_cancel(pcmd->pid))
+        return -NETERR_DHCP_STOPTHREAD;
+
+    // 等待线程退出
+    pthread_join(pcmd->pid, NULL);
+    // 变回干净
+    pcmd->flag &= ~(DIRTY_FLAG);
+    return 0;
+}

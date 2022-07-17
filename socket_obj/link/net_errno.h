@@ -37,4 +37,5 @@
 #define NETERR_REGCOMP_FAIL             32   // 编译正则表达式失败
 #define NETERR_REGEXEC_FAIL             33   // 正则表达式匹配失败
 #define NETERR_SOCKET_ADDRT_EXSIT       34  // 设置网关失败，具体为网关存在
+#define NETERR_DHCP_STOPTHREAD          35  // 取消dhcp线程失败
 #endif
