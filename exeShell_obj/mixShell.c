@@ -33,6 +33,7 @@ closefd_exit:
 #define RETSTR_BUFF_LEN     128
 int exeShellWait(const char* cmd, shell_ret_line handret) {
     int ret = 0;
+    int tmpret = 0;
     // 验证参数
     if (NULL==cmd)
         return -MIXSHELLERR_CHECKPARAM;
@@ -51,11 +52,11 @@ int exeShellWait(const char* cmd, shell_ret_line handret) {
     // 初始化ret,如果没有获取到命令结果,也视为失败
     ret = -MIXSHELLERR_EXESHELL_FAIL;
     while (NULL!=fgets(retstr, RETSTR_BUFF_LEN-1, fp)) {
-        ret = handret(retstr);
-        if (SHELL_RET_ERR==ret) {
+        tmpret = handret(retstr);
+        if (SHELL_RET_ERR==tmpret) {
             ret = -MIXSHELLERR_EXESHELL_FAIL;
             break;
-        } else if (SHELL_RET_OK==ret) {
+        } else if (SHELL_RET_OK==tmpret) {
             ret = 0;
             break;
         }
