@@ -50,7 +50,7 @@ int exeShellWait(const char* cmd, shell_ret_line handret) {
     // 读取执行结果
     // 需要命令里面控制获取结果行数，每次获取最新行
     // 初始化ret,如果没有获取到命令结果,也视为失败
-    ret = -MIXSHELLERR_EXESHELL_FAIL;
+    ret = -MIXSHELLERR_EXESHELL_TIMEOUT;
     while (NULL!=fgets(retstr, RETSTR_BUFF_LEN-1, fp)) {
         tmpret = handret(retstr);
         if (SHELL_RET_ERR==tmpret) {

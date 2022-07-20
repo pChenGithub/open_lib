@@ -5,6 +5,7 @@
 #define MIXSHELLERR_FGETS_FAIL      3   // 执行fgets失败
 #define MIXSHELLERR_EXESHELL_FAIL   4   // 最终结果，shell结果是失败
 #define MIXSHELLERR_EXESHELL_OK     5   // 最终结果，shell结果是成功
+#define MIXSHELLERR_EXESHELL_TIMEOUT    6   // 最终结果，shell执行超时
 
 #endif
 

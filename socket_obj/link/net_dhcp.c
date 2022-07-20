@@ -21,7 +21,7 @@ SHELL_RET_TYPE hand_retstr(const char* linestr) {
     //printf("shell结果 %s\n", linestr);
     if (!strncmp(linestr, "No lease, failing", 17))
         return SHELL_RET_ERR;
-    else if (!strncmp(linestr, "No lease, failing", 17))
+    else if (!strncmp(linestr, "Sending select for", 18))
         return SHELL_RET_OK;
     return SHELL_RET_IGNORE;
 }
@@ -69,7 +69,7 @@ int start_dhcp(const char* ifname, int timeouts, hand_dhcpstatus hand) {
     // 找到干净的cmd_entry，并且遍历是否已经启动ifname的dhcp
     for (i=0;i<MAX_DHCP_COUNT;i++) {
         if (DIRTY_FLAG&pcmd[i].flag && !strncmp(pcmd[i].ifname, ifname, strlen(ifname)+1))
-            return -1;
+            return -NETERR_DHCP_HASTHREAD;
         else if (index<0 && !(DIRTY_FLAG&pcmd[i].flag))
             index = i;
     }

@@ -3,6 +3,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include "mixShell_errno.h"
 typedef enum {
     SHELL_RET_OK = 0,
     SHELL_RET_ERR,
