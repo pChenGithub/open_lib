@@ -19,8 +19,8 @@ typedef struct {
 
 // 静态申请一个链表头
 #define INIT_LINKEDLIST(head) \
-    struct LINK_HEAD head = { \
-        {NULL, NULL,}, \
+    LINK_HEAD head = { \
+        {&head, &head}, \
         0, \
     } \
 
@@ -41,6 +41,30 @@ int remove_lknode(LINK_HEAD* head, int index, LINK_NODE** node);
 // 遍历
 typedef int (*hand_node)(LINK_NODE* node);
 int foreach_lklist(LINK_HEAD* head, hand_node hand);
+// head:链表头指针,node:节点指针
+#define FOREACH_LKLIST(head, type, member) \
+    LINK_NODE* _mnode = NULL; \
+    for (_mnode=head->node.next;_mnode!=(&head->node);_mnode=node->next)
+// 结构体操作
+// 计算域在结构体中的地址偏移
+#define OFFSETOF(type, member) ((size_t)&((type*)0)->member)
+// 根据node地址获取结构体地址
+// ptr:node指针,type:实体结构体类型,member:node在结构体的域名称
+#define CONTAINER_OF(ptr, type, member) \
+({ \
+    const typeof(((type*)0)->member) _tmpptr = (ptr); \
+    (type*)((char*)ptr-OFFSETOF(type, member)); \
+})
+// 清空链表
+int clear_lklist(LINK_HEAD* head, hand_node hand);
+#define CLEAR_LKLIST(head, type, member) ( \
+    LINK_NODE* _mnode = NULL; \
+    for (_mnode=head->node.next;_mnode!=(&head->node);_mnode=node->next) { \
+        const (type*) _mdata = CONTAINER_OF(_mnode, type, member); \
+        free(_mdata); \
+    } \
+    head->nodecount;) \
+
 
 #ifdef __cplusplus
 }
