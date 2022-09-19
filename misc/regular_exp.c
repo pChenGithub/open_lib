@@ -9,8 +9,8 @@ int regular_match(const char* in, const char* regular) {
     int ret = 0;
     int flags = REG_EXTENDED;
     regex_t regex;
-    size_t nmatch;
-    regmatch_t pmatch[1];
+    size_t nmatch = 0;
+    regmatch_t pmatch[1] = {0};
 
     if (NULL==in || NULL==regular)
         return -REGULAR_ERR_PARAMCHECK;
@@ -19,6 +19,7 @@ int regular_match(const char* in, const char* regular) {
     if (0!=ret)
         return -REGULAR_ERR_COMPILED;
 
+    printf("正则比较 %s, %s\n", in, regular);
     ret = REGULAR_MATCH;
     if (0!=regexec(&regex, in, nmatch, pmatch, 0))
         ret = -REGULAR_ERR_NOTMATCH;
