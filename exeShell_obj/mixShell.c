@@ -2,9 +2,12 @@
 #include "mixShell_errno.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 int exeShell(const char* cmd, char* out, const unsigned int out_len) {
     int ret = 0;
+    int status = 0;
     // 验证参数
     if (NULL==cmd)
         return -MIXSHELLERR_CHECKPARAM;
@@ -27,6 +30,9 @@ int exeShell(const char* cmd, char* out, const unsigned int out_len) {
 closefd_exit:
     pclose(fp);
     fp = NULL;
+    printf("等待进程退出\n");
+    wait(&status);
+    printf("进程退出\n");
     return ret;
 }
 
@@ -34,6 +40,7 @@ closefd_exit:
 int exeShellWait(const char* cmd, shell_ret_line handret) {
     int ret = 0;
     int tmpret = 0;
+    int status = 0;
     // 验证参数
     if (NULL==cmd)
         return -MIXSHELLERR_CHECKPARAM;
@@ -61,6 +68,11 @@ int exeShellWait(const char* cmd, shell_ret_line handret) {
             break;
         }
     }
+
+    // 继续读完剩余的内容
+    while (NULL!=fgets(retstr, RETSTR_BUFF_LEN-1, fp))
+        ;
+
     // 执行命令成功/失败
     //printf("执行命令结果%d\n", ret);
 
@@ -70,6 +82,9 @@ int exeShellWait(const char* cmd, shell_ret_line handret) {
 closefd_exit:
     pclose(fp);
     fp = NULL;
+    printf("等待进程退出\n");
+    wait(&status);
+    printf("进程退出\n");
     return ret;
 }
 
