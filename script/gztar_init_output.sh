@@ -7,6 +7,8 @@ version=$1
 PWD=`pwd`
 
 # 脚本配置项
+# 版本号格式
+VERSION_FORMAT=5.1.21.0929
 # 压缩目录
 RAR_DIR=output_initpkg
 # 设备类型/运行目录/bin文件
@@ -30,8 +32,7 @@ echo "打包${RAR_DIR}工作目录文件..."
 # 模糊匹配,./开头
 if [[ "x$0" == x./* ]];then
 	if [ "x${version}" = "x" ];then
-		echo "没有带版本号，例如 $0 5.1.21.0929"
-		sleep 5
+		echo "没有带版本号，例如 $0 ${VERSION_FORMAT}"
 		exit 0
 	fi
 
@@ -46,7 +47,7 @@ if [[ "x$0" == x./* ]];then
 	cd ${RAR_DIR}
 
 	# 修改版本文件
-	echo "[SoftVersion]\n${version}\n[SoftType]\n${DEVICE_TYPE}" > ./${DEVICE_DIR}/app/VersionInfo.ini
+	echo -e "[SoftVersion]\n${version}\n[SoftType]\n${DEVICE_TYPE}" > ./${DEVICE_DIR}/app/VersionInfo.ini
 	${GCC_HEAD}-strip ./${DEVICE_DIR}/app/${DEVICE_APP}
 
 	tar zcf ../${RAR_OUT} * 
