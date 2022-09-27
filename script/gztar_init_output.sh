@@ -2,7 +2,7 @@
 #! /bin/sh
 
 # 获取版本号
-arg1=$1
+version=$1
 # 当前目录
 PWD=`pwd`
 
@@ -27,30 +27,36 @@ GCC_DIR=${PWD}/../gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux
 echo "${PWD}"
 echo "打包${RAR_DIR}工作目录文件..."
 
-${GCC_HEAD}-gcc -dumpversion
-#echo "xxx $?"
-if [ "x0" != "x$?" ];then
-	echo "导入环境变量..."
-	#echo "${GCC_DIR}"
-	export PATH=${PATH}:${GCC_DIR}/bin
+# 模糊匹配,./开头
+if [[ "x$0" == x./* ]];then
+	if [ "x${version}" = "x" ];then
+		echo "没有带版本号，例如 $0 5.1.21.0929"
+		sleep 5
+		exit 0
+	fi
+
+	${GCC_HEAD}-gcc -dumpversion
+	#echo "xxx $?"
+	if [ "x0" != "x$?" ];then
+		echo "导入环境变量..."
+		#echo "${GCC_DIR}"
+		export PATH=${PATH}:${GCC_DIR}/bin
+	fi
+
+	cd ${RAR_DIR}
+
+	# 修改版本文件
+	echo "[SoftVersion]\n${version}\n[SoftType]\n${DEVICE_TYPE}" > ./${DEVICE_DIR}/app/VersionInfo.ini
+	${GCC_HEAD}-strip ./${DEVICE_DIR}/app/${DEVICE_APP}
+
+	tar zcf ../${RAR_OUT} * 
+
+	cd -
+
+	echo "${RAR_OUT} 压缩完成"
+else
+	echo "只支持使用./xxx.sh方式执行脚本"
 fi
-
-if [ "x${arg1}" = "x" ];then
-	echo "没有带版本号，例如 ./$0 5.1.21.0929"
-	exit 0
-fi
-
-cd ${RAR_DIR}
-
-# 修改版本文件
-echo "[SoftVersion]\n${arg1}\n[SoftType]\n${DEVICE_TYPE}" > ./${DEVICE_DIR}/app/VersionInfo.ini
-${GCC_HEAD}-strip ./${DEVICE_DIR}/app/${DEVICE_APP}
-
-tar zcf ../${RAR_OUT} * 
-
-cd -
-
-echo "${RAR_OUT} 压缩完成"
 
 
 
