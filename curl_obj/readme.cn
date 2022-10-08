@@ -1,0 +1,3 @@
+### 编译curl
+PWD=`pwd`
+./configure --host=arm-linux CC=arm-linux-gnueabihf-gcc --prefix=${PWD}/../build_arm --without-ssl

@@ -10,7 +10,7 @@ fi
 
 cd build_x86 
 
-cmake ../curl -DCMAKE_INSTALL_PREFIX=../out/x86
+cmake ../curl-7.85.0 -DCMAKE_INSTALL_PREFIX=../out/x86
 
 make -j8 && make install
 
