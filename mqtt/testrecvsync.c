@@ -25,7 +25,7 @@ int main(int argc, char const *argv[])
     ret = createMqttclient(&client, SERVERADDR, CLIENTID);
     if (ret<0)
     {
-        printf("´´½¨mqtt¿Í»§¶ËÊ§°Ü\n");
+        printf("åˆ›å»ºmqttå®¢æˆ·ç«¯å¤±è´¥\n");
         return -1;
     }
 

@@ -7,14 +7,14 @@ extern "C" {
 #include "paho.mqtt.c-1.3.9/src/MQTTClient.h"
 #include <pthread.h>
 
-#define MQSYNC      // Ê¹ÓÃÍ¬²½Ä£Ê½
+#define MQSYNC      // ä½¿ç”¨åŒæ­¥æ¨¡å¼
 #ifndef MQSYNC
-#define MQASYNC     // Ê¹ÓÃÒì²½Ä£Ê½
+#define MQASYNC     // ä½¿ç”¨å¼‚æ­¥æ¨¡å¼
 #endif
 
 #define QOS         1
-#define LOCKTIMEOUT_100MS   5   // ÄÃËø³¬Ê±Ê±¼ä(100ms)
-#define SENDMSG_TIMEOUT_MS  10000L // µÈ´ı·¢ËÍÏûÏ¢Íê³ÉÊ±¼ä(ms)
+#define LOCKTIMEOUT_100MS   5   // æ‹¿é”è¶…æ—¶æ—¶é—´(100ms)
+#define SENDMSG_TIMEOUT_MS  10000L // ç­‰å¾…å‘é€æ¶ˆæ¯å®Œæˆæ—¶é—´(ms)
 
 typedef struct {
     MQClient base;

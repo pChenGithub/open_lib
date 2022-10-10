@@ -6,27 +6,27 @@
  * @date 2022-10-09
  * 
  * @copyright Copyright (c) 2022
- * ×Ô¶¨ÒåmqttµÄ²Ù×÷½Ó¿Ú
+ * è‡ªå®šä¹‰mqttçš„æ“ä½œæ¥å£
  */
 #ifndef __MQTTCLIENT_H__
 #define __MQTTCLIENT_H__
 #ifdef __cplusplus
 extern "C" {
 #endif
-// ´íÎóÂë¶¨Òå
-#define MQERR_CHECK_PARAM 1   // ²ÎÊı¼ì²éÊ§°Ü
-#define MQERR_MALLOC 2        // ·ÖÅäÄÚ´æÊ§°Ü
-#define MQERR_CLIENT_CREATE 3 // ´´½¨¿Í»§¶ËÊ§°Ü
-#define MQERR_CLIENT_CONNECT 4 // ¿Í»§¶ËÁ¬½ÓÊ§°Ü
-#define MQERR_MQTYPE    5 // mqtt¿âÊ¹ÓÃÀàĞÍ²»¶Ô
-#define MQERR_CLIENT_DISCONNECT    6 // ¿Í»§¶Ë¶Ï¿ªÁ¬½ÓÊ§°Ü
-#define MQERR_CLIENT_DISTROY    7 // Ïú»Ù¿Í»§¶ËÊ§°Ü
-#define MQERR_SENDMSG       8 // ·¢ËÍmqttÏûÏ¢Ê§°Ü
-#define MQERR_WAITFORSEND   9 // µÈ´ı·¢ËÍmqttÏûÏ¢Íê³ÉÊ§°Ü
-#define MQERR_LOCKFAIL      10 // ¼ÓËøÊ§°Ü
-#define MQERR_SETCALLBACK   11 // ÉèÖÃ»Øµ÷º¯ÊıÊ§°Ü
-#define MQERR_SUBSCRIBE_FAIL    12 // ¶©ÔÄÖ÷ÌâÊ§°Ü
-#define MQERR_UNSUBSCRIBE_FAIL  13 // È¡Ïû¶©ÔÄÖ÷ÌâÊ§°Ü
+// é”™è¯¯ç å®šä¹‰
+#define MQERR_CHECK_PARAM 1   // å‚æ•°æ£€æŸ¥å¤±è´¥
+#define MQERR_MALLOC 2        // åˆ†é…å†…å­˜å¤±è´¥
+#define MQERR_CLIENT_CREATE 3 // åˆ›å»ºå®¢æˆ·ç«¯å¤±è´¥
+#define MQERR_CLIENT_CONNECT 4 // å®¢æˆ·ç«¯è¿æ¥å¤±è´¥
+#define MQERR_MQTYPE    5 // mqttåº“ä½¿ç”¨ç±»å‹ä¸å¯¹
+#define MQERR_CLIENT_DISCONNECT    6 // å®¢æˆ·ç«¯æ–­å¼€è¿æ¥å¤±è´¥
+#define MQERR_CLIENT_DISTROY    7 // é”€æ¯å®¢æˆ·ç«¯å¤±è´¥
+#define MQERR_SENDMSG       8 // å‘é€mqttæ¶ˆæ¯å¤±è´¥
+#define MQERR_WAITFORSEND   9 // ç­‰å¾…å‘é€mqttæ¶ˆæ¯å®Œæˆå¤±è´¥
+#define MQERR_LOCKFAIL      10 // åŠ é”å¤±è´¥
+#define MQERR_SETCALLBACK   11 // è®¾ç½®å›è°ƒå‡½æ•°å¤±è´¥
+#define MQERR_SUBSCRIBE_FAIL    12 // è®¢é˜…ä¸»é¢˜å¤±è´¥
+#define MQERR_UNSUBSCRIBE_FAIL  13 // å–æ¶ˆè®¢é˜…ä¸»é¢˜å¤±è´¥
 
 
 typedef enum {
@@ -44,17 +44,17 @@ typedef struct {
     handleComplate sendcomplate;
 } MQClient;
 
-// ´´½¨Ò»¸ömqtt¿Í»§¶Ë
+// åˆ›å»ºä¸€ä¸ªmqttå®¢æˆ·ç«¯
 int createMqttclient(MQClient **client, const char *addr, const char *clientid);
-// Ïú»Ùmqtt¿Í»§¶Ë
+// é”€æ¯mqttå®¢æˆ·ç«¯
 int destroyMqttclient(MQClient* client);
-// ÉèÖÃ»Øµ÷º¯Êı
+// è®¾ç½®å›è°ƒå‡½æ•°
 int setCallBack(MQClient* client, handleMessage msgarrive, handleLost connectlost, handleComplate sendcomplate);
-// Ìá½»Ò»ÌõÏûÏ¢
+// æäº¤ä¸€æ¡æ¶ˆæ¯
 int pushOneMessage(MQClient* client, const char *topic, const char *message);
-// ¶©ÔÄÖ÷Ìâ
+// è®¢é˜…ä¸»é¢˜
 int subscribeTopic(MQClient* client, const char* topic, int qos);
-// È¡Ïû¶©ÔÄ
+// å–æ¶ˆè®¢é˜…
 int unSubscribeTopic(MQClient* client, const char* topic);
 #ifdef __cplusplus
 }

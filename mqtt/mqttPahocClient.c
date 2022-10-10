@@ -10,14 +10,14 @@
  * @param topicLen 
  * @param message 
  * @return int 
- * ´¦Àí¶©ÔÄµÄÏûÏ¢
+ * å¤„ç†è®¢é˜…çš„æ¶ˆæ¯
  */
 static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
     printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
-    // ÕâÀïµ÷ÓÃ»Øµ÷´¦ÀíÏûÏ¢
+    // è¿™é‡Œè°ƒç”¨å›è°ƒå¤„ç†æ¶ˆæ¯
     MQClientPahoC *pclient = (MQClientPahoC *)context;
     if (NULL!=pclient->base.msgarrive)
         pclient->base.msgarrive(topicName, message->payload, message->payloadlen);
@@ -31,13 +31,13 @@ static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_mes
  * 
  * @param context 
  * @param cause 
- * ´¦ÀíÁ¬½Ó¶Ï¿ªµÄÏûÏ¢
+ * å¤„ç†è¿æ¥æ–­å¼€çš„æ¶ˆæ¯
  */
 static void connlost(void *context, char *cause)
 {
     printf("\nConnection lost\n");
     printf("     cause: %s\n", cause);
-    // ÕâÀï¿ªÊ¼´¦ÀíÁ¬½Ó¶ªÊ§ÏûÏ¢
+    // è¿™é‡Œå¼€å§‹å¤„ç†è¿æ¥ä¸¢å¤±æ¶ˆæ¯
     MQClientPahoC *pclient = (MQClientPahoC *)context;
     if (NULL!=pclient->base.connectlost)
         pclient->base.connectlost(cause);
@@ -45,8 +45,8 @@ static void connlost(void *context, char *cause)
 
 /**
  * @brief
- * ´´½¨Ò»¸ömqtt¿Í»§¶Ë,Íê³É½¨Á¢Á¬½Ó,ÉèÖÃ»Øµ÷
- * client:  ·µ»Ø´´½¨µÄ MQClient
+ * åˆ›å»ºä¸€ä¸ªmqttå®¢æˆ·ç«¯,å®Œæˆå»ºç«‹è¿æ¥,è®¾ç½®å›è°ƒ
+ * client:  è¿”å›åˆ›å»ºçš„ MQClient
  */
 int createMqttclient(MQClient **client, const char *addr, const char *clientid) {
     int ret = 0;
@@ -65,7 +65,7 @@ int createMqttclient(MQClient **client, const char *addr, const char *clientid) 
         goto create_fail;
     }
 
-    // Í¬²½Ä£Ê½ÏÂ·¢ËÍÍê³ÉÎŞĞèÉèÖÃ»Øµ÷
+    // åŒæ­¥æ¨¡å¼ä¸‹å‘é€å®Œæˆæ— éœ€è®¾ç½®å›è°ƒ
     ret = MQTTClient_setCallbacks(pclient->client, pclient, connlost, msgarrvd, NULL);
     if (MQTTCLIENT_SUCCESS!=ret)
     {
@@ -79,7 +79,7 @@ int createMqttclient(MQClient **client, const char *addr, const char *clientid) 
     pclient->base.sendcomplate = NULL;
 
     MQTTClient_message* pubmsg = &(pclient->pubmsg);
-    // ³õÊ¼»¯pubmsg
+    // åˆå§‹åŒ–pubmsg
     // {{'M', 'Q', 'T', 'M'}, 1, 0, NULL, 0, 0, 0, 0, MQTTProperties_initializer};
     // MQTTProperties_initializer {0,0,0,NULL}
     pubmsg->struct_id[0] = 'M';
@@ -104,7 +104,7 @@ int createMqttclient(MQClient **client, const char *addr, const char *clientid) 
      * { {'M', 'Q', 'T', 'C'}, 8, 60, 1, 1, NULL, NULL, NULL, 30, 0, NULL,\
         0, NULL, MQTTVERSION_DEFAULT, {NULL, 0, 0}, {0, NULL}, -1, 0, NULL, NULL, NULL}
     */
-    // ³õÊ¼»¯conn_opts
+    // åˆå§‹åŒ–conn_opts
     MQTTClient_connectOptions *conn_opts = &(pclient->conn_opts);
     conn_opts->struct_id[0] = 'M';
     conn_opts->struct_id[1] = 'Q';
@@ -145,7 +145,7 @@ int createMqttclient(MQClient **client, const char *addr, const char *clientid) 
     conn_opts->httpProxy = NULL;
     conn_opts->httpsProxy = NULL;
 
-    // ´ÓĞÂÉèÖÃÁ¬½ÓÊôĞÔ
+    // ä»æ–°è®¾ç½®è¿æ¥å±æ€§
     pclient->conn_opts.keepAliveInterval = 20;
     pclient->conn_opts.cleansession = 1;
     ret = MQTTClient_connect(pclient->client, conn_opts);
@@ -195,7 +195,7 @@ int destroyMqttclient(MQClient* client) {
  * @param topic 
  * @param message 
  * @return int 
- * ·¢ËÍÒ»ÌõmqttÏûÏ¢
+ * å‘é€ä¸€æ¡mqttæ¶ˆæ¯
  */
 int pushOneMessage(MQClient* client, const char *topic, const char *message) {
     int ret = 0;
@@ -206,13 +206,13 @@ int pushOneMessage(MQClient* client, const char *topic, const char *message) {
 
     MQClientPahoC *pclient = (MQClientPahoC *)client;
     MQTTClient_message *pubmsg = &(pclient->pubmsg);
-    // ¼ÓËø, ÉèÖÃ³¬Ê±,
+    // åŠ é”, è®¾ç½®è¶…æ—¶,
     int timeout = LOCKTIMEOUT_100MS;
     while (timeout && 0!=pthread_mutex_trylock(&(pclient->lockmsg))) {
         usleep(100000);
         timeout--;
     }
-    // ÅĞ¶ÏÊÇ·ñ³¬Ê±
+    // åˆ¤æ–­æ˜¯å¦è¶…æ—¶
     if (timeout<=0)
         return -MQERR_LOCKFAIL;
 
@@ -238,7 +238,7 @@ int pushOneMessage(MQClient* client, const char *topic, const char *message) {
 
     ret = 0;
 end_exit:
-    // ½âËø
+    // è§£é”
     pthread_mutex_unlock(&(pclient->lockmsg));
     return ret;
 }
