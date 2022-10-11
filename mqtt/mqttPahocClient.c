@@ -1,6 +1,9 @@
 #include "mqttPahocClient.h"
 #include <stdio.h>
 #include <time.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 /**
  * @brief 
@@ -44,6 +47,17 @@ static void connlost(void *context, char *cause)
 }
 
 /**
+ * @brief 
+ * 
+ * @param context 
+ * @param dt 
+ */
+static void delivered(void *context, MQTTClient_deliveryToken dt)
+{
+    printf("Message with token value %d delivery confirmed\n", dt);
+}
+
+/**
  * @brief
  * 创建一个mqtt客户端,完成建立连接,设置回调
  * client:  返回创建的 MQClient
@@ -66,7 +80,7 @@ int createMqttclient(MQClient **client, const char *addr, const char *clientid) 
     }
 
     // 同步模式下发送完成无需设置回调
-    ret = MQTTClient_setCallbacks(pclient->client, pclient, connlost, msgarrvd, NULL);
+    ret = MQTTClient_setCallbacks(pclient->client, pclient, connlost, msgarrvd, delivered);
     if (MQTTCLIENT_SUCCESS!=ret)
     {
         printf("setcallback ret errno %d\n", ret);
@@ -120,8 +134,8 @@ int createMqttclient(MQClient **client, const char *addr, const char *clientid) 
     conn_opts->username = "ZYZH-YT325-MJJCR-1";
     conn_opts->password = "9ff33667562cc35790b8db58227b222d";
 #else
-    conn_opts->username = NULL;
-    conn_opts->password = NULL;
+    conn_opts->username = MQ_USERNAME;
+    conn_opts->password = MQ_PASSWORD;
 #endif
     conn_opts->connectTimeout = 30;
     conn_opts->retryInterval = 0;
@@ -197,7 +211,7 @@ int destroyMqttclient(MQClient* client) {
  * @return int 
  * 发送一条mqtt消息
  */
-int pushOneMessage(MQClient* client, const char *topic, const char *message) {
+int pushOneMessage(MQClient* client, const char *topic, const char *message, RETAINED_TYPE type) {
     int ret = 0;
     if (NULL == client || NULL == topic || NULL == message)
         return -MQERR_CHECK_PARAM;
@@ -216,10 +230,10 @@ int pushOneMessage(MQClient* client, const char *topic, const char *message) {
     if (timeout<=0)
         return -MQERR_LOCKFAIL;
 
-    pubmsg->payload = message;
+    pubmsg->payload = (void*)message;
     pubmsg->payloadlen = strlen(message);
     pubmsg->qos = QOS;
-    pubmsg->retained = 0;
+    pubmsg->retained = type;
     ret = MQTTClient_publishMessage(pclient->client, topic, pubmsg, &(pclient->token));
     if (MQTTCLIENT_SUCCESS != ret)
     {
@@ -228,7 +242,7 @@ int pushOneMessage(MQClient* client, const char *topic, const char *message) {
         goto end_exit;
     }
 
-    ret = MQTTClient_waitForCompletion(pclient->client, &(pclient->token), SENDMSG_TIMEOUT_MS);
+    ret = MQTTClient_waitForCompletion(pclient->client, pclient->token, SENDMSG_TIMEOUT_MS);
     if (MQTTCLIENT_SUCCESS != ret)
     {
         printf("waitforcompletion ret errno %d, token %d\n", ret, pclient->token);

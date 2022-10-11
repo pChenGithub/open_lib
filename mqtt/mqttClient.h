@@ -51,7 +51,11 @@ int destroyMqttclient(MQClient* client);
 // 设置回调函数
 int setCallBack(MQClient* client, handleMessage msgarrive, handleLost connectlost, handleComplate sendcomplate);
 // 提交一条消息
-int pushOneMessage(MQClient* client, const char *topic, const char *message);
+typedef enum {
+    RETAINED_OFF = 0,
+    RETAINED_ON,
+} RETAINED_TYPE;
+int pushOneMessage(MQClient *client, const char *topic, const char *message, RETAINED_TYPE type);
 // 订阅主题
 int subscribeTopic(MQClient* client, const char* topic, int qos);
 // 取消订阅

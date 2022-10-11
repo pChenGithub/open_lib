@@ -16,6 +16,9 @@ extern "C" {
 #define LOCKTIMEOUT_100MS   5   // 拿锁超时时间(100ms)
 #define SENDMSG_TIMEOUT_MS  10000L // 等待发送消息完成时间(ms)
 
+#define MQ_USERNAME "704A0ECA08CC"
+#define MQ_PASSWORD "9ff33667562cc35790b8db58227b222d"
+
 typedef struct {
     MQClient base;
     MQTTClient client;

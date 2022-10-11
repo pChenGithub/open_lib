@@ -1,9 +1,11 @@
 #include "mqttClient.h"
 #include <stdio.h>
+#include <unistd.h>
 
 #if 0
 #define SERVERADDR "tcp://172.16.4.180:30105"
-#define CLIENTID    "12345"
+#define CLIENTID    "ZYZH-YT325-MJJCR-1|704A0ECA08CC_temp1"
+//#define CLIENTID    "_temp123"
 #else
 #define SERVERADDR "tcp://172.16.70.182:1883"
 #define CLIENTID    "12345"
@@ -30,12 +32,17 @@ int main(int argc, char const *argv[])
     }
 
     setCallBack(client, msgrecv, lostconnect, NULL);
-    subscribeTopic(client, "1234", 1);
-    subscribeTopic(client, "hello", 1);
+    //subscribeTopic(client, "/sys/ZYZH-YT325-MJJCR-1/704A0ECA08CC/thing/event/connect", 1);
+    ret = subscribeTopic(client, "/sys/ZYZH-YT325-MJJCR-1/704A0ECA08CC/device/rrpc/connect/response", 1);
+    if (ret<0)
+    {
+        printf("mqtt客户端订阅失败\n");
+        return -1;
+    }
 
     while (1)
         sleep(100);
 
-    int destroyMqttclient(client);
+    destroyMqttclient(client);
     return 0;
 }
