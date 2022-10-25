@@ -20,6 +20,12 @@ static int http_reply_json(const char* buffer, int len, void* arg)
     HTTP_REPLY* reply = (HTTP_REPLY*)arg;
     char* p = reply->p;
     int maxLen = reply->len;
+    if (NULL==p)
+    {
+        // 传入带回参数为空
+        reply->ret = -HTTPERROR_CHECK_PAREM;
+        return -HTTPERROR_CHECK_PAREM;
+    }
 
     if (maxLen<=(reply->offset+len))
     {
@@ -61,18 +67,19 @@ static size_t curl_write_cb(void* buffer, size_t size, size_t nitems, void* arg)
  * 一个http请求,可重入的
  * type http请求返回类型
  * url  请求地址
- * data 请求/返回的json字符串（如果返回json），指定文件名（如果获取的文件）
- * len  data长度
+ * indata 请求的json字符串（如果请求json），指定文件名（如果获取的文件）
+ * outdata 返回的json字符串（如果返回json）,没有返回指定NULL
+ * outdatalen  outdata长度,如果没有返回,指定任意值
  *
 */
-int httpReq(HTTP_REPLY_TYPE type, const char *url, char *data, const int len)
+int httpReq(HTTP_REPLY_TYPE type ,const char* url, const char* indata, char* outdata, const int outdatalen)
 {
 
-    if (NULL==url || NULL==data || len<=0)
+    if (NULL==url || NULL==indata)
         return -HTTPERROR_CHECK_PAREM;
 
     int ret = 0;
-    int lenght = strlen(data);
+    int lenght = strlen(indata);
     HTTP_REPLY reply;
     CURL *curl = NULL;
     struct curl_slist *headers = NULL;
@@ -86,7 +93,7 @@ int httpReq(HTTP_REPLY_TYPE type, const char *url, char *data, const int len)
     case RET_FILE:
         reply.opt = http_reply_file;
         // 获取文件句柄
-        reply.p = fopen(data, "w");
+        reply.p = fopen(indata, "w");
         if (NULL==reply.p)
         {
             return -HTTPERROR_OPENFILE;
@@ -95,11 +102,13 @@ int httpReq(HTTP_REPLY_TYPE type, const char *url, char *data, const int len)
         break;
     case RET_JSON:
         reply.opt = http_reply_json;
-        // 有返回内容，把缓存指向data，并且指定长度
-        reply.p = data;
-        reply.len = len;
+        // 有返回内容，把缓存指向data，并且指定长度,
+        // 这两个参数的检查会在接收数据的时候判断
+        reply.p = outdata;
+        reply.len = outdatalen;
         break;
     default:
+        return -HTTPERROR_CHECK_PAREM;
         break;
     }
 
@@ -123,7 +132,7 @@ int httpReq(HTTP_REPLY_TYPE type, const char *url, char *data, const int len)
 
     // body有长度，填入body
     if (RET_JSON==type && 0!=lenght)
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, indata);
 
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &reply);

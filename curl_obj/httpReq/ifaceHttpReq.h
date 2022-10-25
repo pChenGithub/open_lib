@@ -55,7 +55,7 @@ typedef struct {
 typedef void (*http_response_cb)(httpC_req_task* req);
 #endif
 // http请求接口，这里的type是为了用户指定返回的内容
-int httpReq(HTTP_REPLY_TYPE type ,const char* url, char* data, const int len);
+int httpReq(HTTP_REPLY_TYPE type ,const char* url, const char* indata, char* outdata, const int outdatalen);
 // http上传文件，data
 int httpUploadFile(const char* url, char* data, int len, char *admin, char *pass);
 // int httpC_svc_set_req_cb();
