@@ -1,0 +1,4 @@
+# 创建sm2私钥
+../build_x86/bin/openssl ecparam -genkey -name SM2 -out SM2PrivateKey.pem
+# 创建公钥
+../build_x86/bin/openssl ec -in SM2PrivateKey.pem -pubout -out SM2PublicKey.pem
