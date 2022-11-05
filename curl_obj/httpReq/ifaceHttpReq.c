@@ -149,6 +149,8 @@ int httpReq(HTTP_REPLY_TYPE type ,const char* url, const char* indata, char* out
         else
             ret = -HTTPERROR_CURL_PERFORM;
     }
+    else
+        ret = reply.ret;
 
 curlInitError:
     // 如果是文件，需要关闭
