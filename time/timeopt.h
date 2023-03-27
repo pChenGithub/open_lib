@@ -12,6 +12,8 @@ extern "C" {
 int getStdTime(char* hour, char* min, char* sec);
 int getStdDate(char* year, char* month, char* day);
 int getStdDateTime(char dt[6]);
+// 获取秒,字符串返回
+int getSTime(char* s, int slen);
 // 获取毫秒,字符串返回
 int getMsTime(char* ms, int mslen);
 // 获取时间,年月日,时分秒,字符串返回,年保留2个字节

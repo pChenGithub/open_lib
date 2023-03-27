@@ -49,6 +49,8 @@ int getMsTime(char *ms, int mslen)
     return 0;
 }
 
+// %Y%m%d%H%M%S 20230104161100
+// %y%m%d%H%M%S 230104161100
 int getStdDataTimeStr(char *dt, int dtlen, const char *format)
 {
     if (NULL==dt || dtlen<=0 || NULL==format)
@@ -60,5 +62,14 @@ int getStdDataTimeStr(char *dt, int dtlen, const char *format)
         return -TIMEOPT_ERR_LOCALTIME;
     if (strftime(dt, dtlen, format, &tmptm)<=0)
         return -TIMEOPT_ERR_STRFTIME;
+    return 0;
+}
+
+int getSTime(char *s, int slen)
+{
+    if (NULL==s || slen<=0)
+        return -TIMEOPT_ERR_CHECKPARAM;
+    time_t t = time(NULL);
+    snprintf(s, slen, "%ld", t);
     return 0;
 }
