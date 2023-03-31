@@ -1,0 +1,18 @@
+这个脚本是为了清理易通版本YT328一体机的设备参数版本号，以便于重新获取参数
+解压clearData.tar.gz到/root目录
+以下为执行命令(假设clearData.tar.gz已经在/root目录,如果在其他目录,按其他目录类似操作)
+# 注释，进入到/root目录
+cd
+# 解压文件，.../为你的clearData.tar.gz文件方的目录
+tar xvf .../clearData.tar.gz -C /root
+# 进入clearData目录
+cd clearData
+# 1 执行清除人脸数据命令
+./dosql.sh clearFaceAndAuth.sql /data/zyep_dctr/data/auth.db zyep_dctr
+
+# 2 执行初始化设备命令
+./dosql.sh initDevice.sql /data/zyep_dctr/data/auth.db zyep_dctr
+
+
+
+
