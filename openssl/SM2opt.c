@@ -80,7 +80,7 @@ int SM2EvpKeyFromFile(const char* keyFile, EVP_PKEY** evpkey, KEY_TYPE type) {
         break;
     }
 
-    EVP_PKEY_set_alias_type(key, EVP_PKEY_SM2);
+    //EVP_PKEY_set_alias_type(key, EVP_PKEY_SM2);
     BIO_free(bio);
     return 0;
 }
