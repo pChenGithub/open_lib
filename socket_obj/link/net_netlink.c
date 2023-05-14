@@ -13,6 +13,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 
 #define NL_THREAD_RUNNING   0x01
@@ -232,9 +235,27 @@ int nl_getGateways(const char* dist, const char* devname, const char* gate, ROUT
     }
 
     int recvlen = 0;
-    char* p = (char*)nlmsg;
+    char *p = (char *)nlmsg;
+#if 1
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(socketfd, &fds);
+    struct timeval tv;
+    // 超时设置500ms
+    tv.tv_sec = 0;
+	tv.tv_usec = 500000;
+    while (select(socketfd+1, &fds, NULL, NULL, &tv)>0){
+        ret = recv(socketfd, p + recvlen, GETROUTE_BUFFSIZE - recvlen, 0);
+        if (ret<0){
+            ret = -NETERR_SOCKET_RECVFAIL;
+            goto closefd_exit;
+        }
+        recvlen += ret;
+    }
+#else
     while (ret=recv(socketfd, p+recvlen, GETROUTE_BUFFSIZE-recvlen, 0)) {
-        if (0==ret)
+        printf("获取内容 %d\n", ret);
+        if (0 == ret)
             break;
         else if (ret<0) {
             ret = -NETERR_SOCKET_RECVFAIL;
@@ -242,6 +263,7 @@ int nl_getGateways(const char* dist, const char* devname, const char* gate, ROUT
         }
         recvlen += ret;
     }
+#endif
 
     int i = 0;
     struct nlmsghdr* pnl = nlmsg;

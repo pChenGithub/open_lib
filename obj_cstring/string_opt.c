@@ -105,6 +105,46 @@ int hexToint(const char in) {
     return hexarrayToint(&in, 1);
 }
 
+// 拷贝字符串
+int strCopyC(char *buff, int len, const char* str)
+{
+    if (NULL==buff || len<=0 || NULL==str)
+        return -STROPTERR_CHECKPARAM;
+
+    int strlenght = strlen(str);
+    strlenght = strlenght<len?strlenght:len-1;
+
+    memcpy(buff, str, strlenght);
+    buff[strlenght] = 0;
+    return 0;
+}
+
+char *ll2Str(char *out, int outlen, long long in)
+{
+    if (NULL==out || outlen<=0)
+        return NULL;
+    snprintf(out, outlen, "%lld", in);
+    return out;
+}
+
+char *i2Str(char *out, int outlen, int in)
+{
+    if (NULL==out || outlen<=0)
+        return NULL;
+    snprintf(out, outlen, "%d", in);
+    return out;
+}
+
+char *ipByte2Str(char *ipBytes, char *out, int outlen)
+{
+    if (NULL==ipBytes || NULL==out || outlen<=0)
+        return NULL;
+    snprintf(out, outlen, "%d.%d.%d.%d",
+             ipBytes[0], ipBytes[1], ipBytes[2], ipBytes[3]);
+    return out;
+}
+
+
 
 
 

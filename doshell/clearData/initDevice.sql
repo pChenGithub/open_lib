@@ -1,0 +1,21 @@
+drop table eventRecord;
+drop table face_img_info;
+drop table FaceInfo;
+drop table AccTmpAuthorityInfo;
+drop table FaceCodeInfo;
+drop table DoorHolidayInfo;
+drop table TimeGroupInfo;
+drop table CardAccnumInfo;
+drop table AccBaseInfo;
+drop table accAuthorityInfo;
+drop table ReaderInfo;
+drop table DoorInfo;
+drop table TerminalInfo;
+drop table SystemParm;
+drop table VersionInfo;
+drop table eventStatistics;
+drop table LogManage;
+drop table RfidModule;
+drop table QrModule;
+drop table FaceModule;
+
