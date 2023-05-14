@@ -1,5 +1,5 @@
-#target+=testParser
-target+=testFill
+target+=testParser
+#target+=testFill
 
 all: ${target}
 	${DEBUGER} ./${target}

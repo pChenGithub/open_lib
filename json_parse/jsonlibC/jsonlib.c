@@ -67,7 +67,8 @@ static int paserArrayObj(cJSON* obj, JSON_OBJ_ITEM* parent, int index) {
         return -JSONLIB_ERR_PASER_IGNORE;
     }
 
-    char *pbase = array+index;
+    // 获取数组第index个元素
+    char *pbase = array+index*arrayItemSize;
     char *memreq = NULL;
     // 如果没有指定数组进来,则分配内存
     if (NULL==array) {
@@ -255,9 +256,159 @@ int paserJson(const char* jsonstr, JSON_OBJ_ITEM* retdata) {
 /***********************************************************
  * ********************      组包     **********************
  * *********************************************************/
-static int fillObj(cJSON *obj, JSON_OBJ_FILL_ITEM *retdata);
+static int fillObj(cJSON *obj, JSON_OBJ_FILL_ITEM *parent);
 
-static int fillArrayObj(cJSON* objArray, JSON_OBJ_FILL_ITEM* retdata) {
+static int fillArrayItem(cJSON* obj, JSON_OBJ_FILL_ITEM* parent, int index) {
+    char tmpstr[12] = {0};
+    if (NULL==obj || NULL==parent)
+        return -JSONLIB_ERR_PARAM;
+    
+    // 获取数组元素构成，下面4个变量已经在上一级验证过了
+    JSON_ARRAY_OBJ_FILL_ITEM *retdata = ((JSON_ARRAY_OBJ_FILL *)(parent->value))->arrayItem;
+    char* array = ((JSON_ARRAY_OBJ *)(parent->value))->array;
+    int arrayItemSize = ((JSON_ARRAY_OBJ *)(parent->value))->arrayItemSize;
+    int arraySize = ((JSON_ARRAY_OBJ *)(parent->value))->arraySize;
+
+    // 获取数组第index个元素
+    char *ptmp = array+index*arrayItemSize;
+    // 遍历数组的协议定义
+    for (int i=0;;i++) {
+        if (NULL==retdata[i].jsonlable)
+            break;
+        // 数组元素只考虑基本类型了，其他忽略
+        switch (retdata[i].type)
+        {
+        case TYPE_INT:
+            if (VTYPE_INT==retdata[i].vType) {
+                cJSON_AddNumberToObject(obj, retdata->jsonlable, *(int*)ptmp);
+                ptmp += sizeof(int);
+            } else if (VTYPE_FLOAT==retdata[i].vType) {
+                cJSON_AddNumberToObject(obj, retdata->jsonlable, *(float*)ptmp);
+                ptmp += sizeof(float);
+            } else if (VTYPE_STR==retdata[i].vType) {
+                cJSON_AddNumberToObject(obj, retdata->jsonlable, atoi(ptmp));
+                ptmp += retdata[i].datalen;
+            }
+            else 
+                return -JSONLIB_ERR_FIELDTYPE;
+            break;
+        case TYPE_FLOAT:
+            if (VTYPE_INT==retdata[i].vType) {
+                cJSON_AddNumberToObject(obj, retdata->jsonlable, *(int*)ptmp);
+                ptmp += sizeof(int);
+            } else if (VTYPE_FLOAT==retdata[i].vType) {
+                cJSON_AddNumberToObject(obj, retdata->jsonlable, *(float*)ptmp);
+                ptmp += sizeof(float);
+            } else if (VTYPE_STR==retdata[i].vType) {
+                cJSON_AddNumberToObject(obj, retdata->jsonlable, atof(ptmp));
+                ptmp += retdata[i].datalen;
+            }
+            else 
+                return -JSONLIB_ERR_FIELDTYPE;
+            break;
+        case TYPE_STR:
+            if (VTYPE_INT==retdata[i].vType) {
+                snprintf(tmpstr, sizeof(tmpstr), "%d", *(int*)ptmp);
+                cJSON_AddStringToObject(obj, retdata->jsonlable, tmpstr);
+                ptmp += sizeof(int);
+            } else if (VTYPE_FLOAT==retdata[i].vType) {
+                snprintf(tmpstr, sizeof(tmpstr), "%f", *(float*)ptmp);
+                cJSON_AddStringToObject(obj, retdata->jsonlable, tmpstr);
+                ptmp += sizeof(float);
+            } else if (VTYPE_STR==retdata[i].vType) {
+                cJSON_AddStringToObject(obj, retdata->jsonlable, ptmp);
+                ptmp += retdata[i].datalen;
+            }
+            else 
+                return -JSONLIB_ERR_FIELDTYPE;
+            break;
+        default:
+            break;
+        }
+    }
+
+    
+    return 0;
+}
+
+static int fillArrayObj(cJSON* objArray, JSON_OBJ_FILL_ITEM* parent) {
+    cJSON* item = NULL;
+    int ret = 0;
+    int size = 0;
+    if (NULL==objArray || NULL==parent)
+        return -JSONLIB_ERR_PARAM;
+    // 获取数组元素构成
+    JSON_ARRAY_OBJ_FILL_ITEM *retdata = ((JSON_ARRAY_OBJ_FILL *)(parent->value))->arrayItem;
+    // 获取回调
+    jsonarrayHandOne handFunc = ((JSON_ARRAY_OBJ *)(parent->value))->handFunc;
+    // 获取数组信息
+    char* array = ((JSON_ARRAY_OBJ *)(parent->value))->array;
+    int arrayItemSize = ((JSON_ARRAY_OBJ *)(parent->value))->arrayItemSize;
+    int arraySize = ((JSON_ARRAY_OBJ *)(parent->value))->arraySize;
+
+    if (NULL==retdata)
+        return -JSONLIB_ERR_PARAM;
+
+    if (NULL==retdata)
+        return -JSONLIB_ERR_PARAM;
+
+    // 统计数据变量大小(根据规则统计)
+    for (int i = 0;;i++) {
+        if (NULL==retdata[i].jsonlable)
+            break;
+
+        switch (retdata[i].vType)
+        {
+        case VTYPE_INT:
+            size += sizeof(int);
+            break;
+        case VTYPE_FLOAT:
+            size += 4;
+            break;
+        case VTYPE_STR:
+            size += retdata[i].datalen;
+            break;
+        default:
+            // 其他的不统计,这里不考虑数组元素里面有复杂数据
+            break;
+        }
+    }
+
+    if (size<=0) {
+        // 没有数据需要填充
+        return -JSONLIB_ERR_FILL_IGNORE;
+    }
+
+    // 数组填充
+    if (NULL!=array && arraySize>0) {
+        // 如果给的数组大小不对，错误，大小不匹配
+        //printf("xxx %d,  %d\n", arrayItemSize, size);
+        if (arrayItemSize!=size)
+            return -JSONLIB_ERR_ARRAY_DATASIZE;
+
+        for (int i=0;i<arraySize;i++) {
+            item = cJSON_CreateObject();
+            if (NULL==item)
+                return -JSONLIB_ERR_JSON_OBJCREATE;
+            // 添加到数组
+            cJSON_AddItemToArray(objArray, item);
+            // 按规则填充数组元素
+            ret = fillArrayItem(item, parent, i);
+            if (ret<0)
+                return ret;
+        }
+        return 0;
+    }
+
+    //
+    if (NULL!=handFunc) {
+        // 回调填充
+        //ret = handFunc();
+        return 0;
+    }
+
+    // 既没有数组，也没有回调，参数错误
+    return -JSONLIB_ERR_ARRAY_OPT;
 }
 
 static int fillItem(cJSON* obj, JSON_OBJ_FILL_ITEM* retdata) {

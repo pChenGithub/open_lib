@@ -26,7 +26,7 @@ typedef struct
 typedef struct
 {
     int eventNum;
-    int doorId;
+    float doorId;
     char cardID[32];
     int enterType;
 } TEST_ARRAY_DATA;
@@ -37,7 +37,13 @@ TEST_DATA data = {
     22.1,
     33,
 };
-TEST_ARRAY_DATA adata;
+TEST_ARRAY_DATA adata[] = {
+    {1,2.1,"2323"},
+    {2,3,"hello",2},
+    {2,3,"hello",2},
+    {2,3,"hello",2},
+    {2,3,"hello",2},
+};
 
 JSON_OBJ_FILL_ITEM subitems[] = {
     {"eventNum", TYPE_INT},
@@ -51,10 +57,12 @@ JSON_OBJ_FILL_ITEM subitems[] = {
     {NULL}
 };
 
-JSON_ARRAY_OBJ_ITEM arrayitem[] = {
-    {"eventNum", TYPE_INT},
-    {"doorId", TYPE_INT},
-    {"cardID", TYPE_STR, 32},
+JSON_ARRAY_OBJ_FILL_ITEM arrayitem[] = {
+    {"eventNum", TYPE_INT, VTYPE_INT},
+    {"doorId", TYPE_INT, VTYPE_FLOAT},
+    {"cardID", TYPE_STR, VTYPE_STR, 32},
+    {"enterType", TYPE_INT, VTYPE_INT},
+    {NULL},
 };
 
 static int handArray(void* paserData, int dataSize) {
@@ -65,18 +73,18 @@ static int handArray(void* paserData, int dataSize) {
     TEST_ARRAY_DATA *adata = (TEST_ARRAY_DATA *)paserData;
 
     // 处理TEST_ARRAY_DATA数据,入库或则修改内存
-    printf("eventNum %d, doorId %d, cardID %s, enterType %d\n", 
+    printf("eventNum %d, doorId %f, cardID %s, enterType %d\n", 
         adata->eventNum, adata->doorId, adata->cardID, adata->enterType);
 
     return 0;
 }
 
-JSON_ARRAY_OBJ arrayRows = {
+JSON_ARRAY_OBJ_FILL arrayRows = {
     arrayitem,
     handArray,
-    NULL,
-    0,
-    0,
+    adata,
+    sizeof(TEST_ARRAY_DATA),
+    sizeof(adata)/sizeof(TEST_ARRAY_DATA),
 };
 
 JSON_OBJ_FILL_ITEM rootdata[] = {
