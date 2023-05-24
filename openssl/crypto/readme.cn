@@ -1,0 +1,16 @@
+# MD5
+# RSA
+非对称加密
+加密和解密方式：公钥加密-私钥解密，私钥加密-公钥解密
+# SM2
+https://zypapa.blog.csdn.net/article/details/107623909?spm=1001.2101.3001.6650.1&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ERate-1-107623909-blog-100013531.235%5Ev36%5Epc_relevant_anti_vip_base&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7EBlogCommendFromBaidu%7ERate-1-107623909-blog-100013531.235%5Ev36%5Epc_relevant_anti_vip_base&utm_relevant_index=2
+OpenSSL 1.1.1版本提供了对国密SM2算法的支持
+# AES 
+
+# DES 
+
+# base64
+
+# url 
+
+#
