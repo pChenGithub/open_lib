@@ -20,7 +20,9 @@ typedef struct
 } TEST_ARRAY_DATA;
 
 TEST_DATA data;
-TEST_ARRAY_DATA adata;
+
+#define ARRAY_SIZE  2
+TEST_ARRAY_DATA adata[ARRAY_SIZE];
 
 JSON_ARRAY_OBJ_ITEM array_item[] = {
     {"eventNum", TYPE_INT},
@@ -51,9 +53,9 @@ static int handArray(void* paserData, int dataSize) {
 JSON_ARRAY_OBJ arrayRows = {
     array_item,
     handArray,
-    NULL,
-    0,
-    0,
+    adata,
+    sizeof(TEST_ARRAY_DATA),
+    sizeof(adata)/sizeof(TEST_ARRAY_DATA),
 };
 
 JSON_OBJ_ITEM rootdata[] = {
@@ -73,6 +75,10 @@ int main(int argc, char const *argv[])
         printf("解析json失败,错误码 %d\n", ret);
 
     printf("deviceNum %d, count %d\n", data.deviceNum, data.count);
+    for (int i=0;i<ARRAY_SIZE;i++) {
+        printf("eventNum %d, doorId %d, cardID %s\n", adata[i].eventNum, adata[i].doorId, adata[i].cardID);
+        printf("enterType %d\n", adata[i].enterType);
+    }
     return 0;
 }
 
