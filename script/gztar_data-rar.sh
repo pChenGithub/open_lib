@@ -8,21 +8,21 @@ PWD=`pwd`
 
 # 脚本配置项
 # 版本号格式
-VERSION_FORMAT=5.1.21.0929
+VERSION_FORMAT=4.0.21.0929
 # 压缩目录
-RAR_DIR=output_initpkg
+RAR_DIR=data-rar
 # 设备类型/运行目录/bin文件
-DEVICE_TYPE=zyep_smartdc
+DEVICE_TYPE=yt327L_zytk_dctr
 # app文件名称
-DEVICE_APP=zyep_smartdc
+DEVICE_APP=zytk_pdctr
 # 工程目录
-DEVICE_DIR=zyep_smartdc
+DEVICE_DIR=zytk_pdctr
 # 输出压缩文件
-RAR_OUT=usr.tar.gz
+RAR_OUT=yt327L_dctr40_update_${version}.tar.gz
 # 交叉编译工具
 GCC_HEAD=arm-linux-gnueabihf
 # gcc路径
-GCC_DIR=${PWD}/../gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux
+GCC_DIR=/home/zhh/work/yt328_reader/020.源代码/toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf
 # 源码路径
 SOURCE_CODE_DIR=../zytk_dctr_yt327
 # 脚本配置项 end
