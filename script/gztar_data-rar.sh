@@ -1,4 +1,4 @@
-# YT系列压缩初始包脚本标准
+# YT系列压缩更新包脚本标准
 #! /bin/sh
 
 # 获取版本号
@@ -23,6 +23,8 @@ RAR_OUT=usr.tar.gz
 GCC_HEAD=arm-linux-gnueabihf
 # gcc路径
 GCC_DIR=${PWD}/../gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux
+# 源码路径
+SOURCE_CODE_DIR=../zytk_dctr_yt327
 # 脚本配置项 end
 
 
@@ -44,6 +46,8 @@ if [[ "x$0" == x./* ]];then
 		export PATH=${PATH}:${GCC_DIR}/bin
 	fi
 
+	# 拷贝执行文件
+	cp -vf ${SOURCE_CODE_DIR}/${DEVICE_APP} ${RAR_DIR}/${DEVICE_DIR}/app/${DEVICE_APP}
 	cd ${RAR_DIR}
 
 	# 修改版本文件
