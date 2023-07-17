@@ -1,2 +1,10 @@
-# build.sh
 # 单纯编译工程的脚本
+# build.sh
+
+# 打包升级包的标准脚本
+# gztar_data-rar.sh
+
+# 打包初始包的标准脚本
+# gztar_data_3in1_output_new.sh
+
+
