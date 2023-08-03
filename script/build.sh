@@ -11,19 +11,15 @@ SOURCE_DIR=$1
 # 项目个性化的一些变量,需要检查不为空
 # 默认指定的工程目录
 DEFAULT_SOURCE=zyep_dctr_yt327
-# 打包目录
-OUTPUT_DIR=output
-# 升级包压缩目录
-PACK_DIFF_DIR=data-rar
-# 升级包压缩脚本
-PACK_SCRIPT=gztar_data-rar.sh
-# 应用程序名称
-APPEXE_NAME=zyep_pdctr
-# 安装目录名称
-INSTALL_OBJ_NAME=$APPEXE_NAME
 # pro文件
 PRO_FILE=yt327L.pro
+# 版本号文件,相对工程路径
+VER_FILE=global.h
+# 版本号字段
+VER_STR=APP_VERSION
 
+#######################################################
+# 以下为不修改部分,业务实现
 # 检查环境
 echo "check qt && toolchain"
 if [ -d "toolchain" ];then
@@ -66,7 +62,7 @@ make -j8
 echo "build qt done"
 ls
 # 打印应用程序版本号
-cat global.h | grep APP_VERSION
+cat $VER_FILE | grep $VER_STR
 cd -
 
 

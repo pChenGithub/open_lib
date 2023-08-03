@@ -17,8 +17,9 @@ app_def[2]="易通一体机(zyep) zyep_yt328_dctr_new zyep_dctr zyep_dctr /home/
 app_def[3]="易通云一体机(etc) zyetc_yt328_dctr zyetc_dctr zyetc_dctr /home/zhh/work/ytdctr328/YT328一体机"
 # 变量定义结束
 
+############################################################################
+# 下面为处理业务,不修改内容
 echo "打包原始应用(3合1)工作目录文件..."
-
 arm-linux-gnueabihf-gcc -dumpversion
 #echo "xxx $?"
 if [ "x0" != "x$?" ];then
