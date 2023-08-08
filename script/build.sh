@@ -49,6 +49,7 @@ if [ x"y" = "x$DO_CLEAN" ];then
 	echo "清理工程:$SOURCE_DIR ..."
 	cd $SOURCE_DIR
 	make clean
+	cd -
 else
 	echo "跳过清理"
 fi
