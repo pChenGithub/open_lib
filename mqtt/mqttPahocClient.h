@@ -6,6 +6,7 @@ extern "C" {
 #include "mqttClient.h"
 #include "paho.mqtt.c-1.3.9/src/MQTTClient.h"
 #include <pthread.h>
+#include <semaphore.h>
 
 #define MQSYNC      // 使用同步模式
 #ifndef MQSYNC
@@ -13,11 +14,11 @@ extern "C" {
 #endif
 
 #define QOS         1
-#define LOCKTIMEOUT_100MS   5   // 拿锁超时时间(100ms)
+#define LOCKTIMEOUT_10MS    50   // 拿锁超时时间(10ms)
 #define SENDMSG_TIMEOUT_MS  10000L // 等待发送消息完成时间(ms)
 
-#define MQ_USERNAME "704A0ECA08CC"
-#define MQ_PASSWORD "9ff33667562cc35790b8db58227b222d"
+#define MQ_USERNAME "BA2FD68F4C61"
+#define MQ_PASSWORD "7f8b2239e58c865d8c74d246cc46fa48"
 
 typedef struct {
     MQClient base;
@@ -26,6 +27,13 @@ typedef struct {
     MQTTClient_message pubmsg;
     MQTTClient_deliveryToken token;
     pthread_mutex_t lockmsg;
+    // 改造同步方式使用的信号量
+    sem_t waitRspTopic;
+    // 同步通信监听的topic
+    const char* waitTopic;
+    char* waitData;
+    int waitDataLen;
+    int waitRetCode;
 } MQClientPahoC;
 
 #ifdef __cplusplus
