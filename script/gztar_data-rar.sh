@@ -25,6 +25,8 @@ SOURCE_CODE_DIR=../zytk_dctr_yt327
 VER_FILE=global.h
 # 版本号字段
 VER_STR=APP_VERSION
+# 重命名文件名称
+RENAME_NAME=zyeph_smartdc
 # 脚本配置项 end
 
 
@@ -67,6 +69,8 @@ if [[ "x$0" == x./* ]];then
 	cd -
 
 	echo "${RAR_OUT}_update_${version}.tar.gz 压缩完成"
+	# 重命名
+	cp -vf ${RAR_OUT}_update_${version}.tar.gz ${RENAME_NAME}.tar.gz
 else
 	echo "只支持使用./xxx.sh方式执行脚本"
 fi

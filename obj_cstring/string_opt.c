@@ -127,6 +127,14 @@ char *ll2Str(char *out, int outlen, long long in)
     return out;
 }
 
+char *l2Str(char *out, int outlen, long in)
+{
+    if (NULL==out || outlen<=0)
+        return NULL;
+    snprintf(out, outlen, "%ld", in);
+    return out;
+}
+
 char *i2Str(char *out, int outlen, int in)
 {
     if (NULL==out || outlen<=0)
@@ -144,7 +152,86 @@ char *ipByte2Str(char *ipBytes, char *out, int outlen)
     return out;
 }
 
+int ipStr2Byte4(unsigned char *ipBytes, const char *ip)
+{
+    int ip0=0, ip1=0, ip2=0, ip3=0;
+    if (NULL==ipBytes || NULL==ip)
+        return -1;
+    sscanf(ip, "%d.%d.%d.%d", &ip0, &ip1, &ip2, &ip3);
+    ipBytes[0] = ip0;
+    ipBytes[1] = ip1;
+    ipBytes[2] = ip2;
+    ipBytes[3] = ip3;
+    return 0;
+}
 
+char *getHostFromUrl(const char *url, char *host, int len)
+{
+    if (NULL==url || NULL==host || len<=0)
+        return NULL;
+
+    const char* ps = NULL;
+    const char* pe = url;
+
+    while (!('/'==pe[0] && '/'!=pe[1]))
+    {
+        if (':'==pe[0])
+        {
+            pe += 3;
+            // 获取开头
+            ps = pe;
+            continue;
+        }
+        pe++;
+    }
+
+    int hostlen = pe-ps;
+    if (len<=hostlen)
+        return NULL;
+
+    memcpy(host, ps, hostlen);
+    host[hostlen] = 0;
+
+    return host;
+}
+
+// 按字符截取字符串,copy返回
+int cutStr(const char *src, char cutchar, CUT_STR *out, int outlen)
+{
+    if (NULL==src || NULL==out || outlen<=0)
+        return -1;
+
+    int cylen = 0;
+    int i = 0;
+    char* pstr = src;
+    char* sstr = src;
+    // 遍历字符串
+    while (0!=(*pstr) && i<outlen) {
+        if (cutchar!=(*pstr)) {
+            pstr++;
+            continue ;
+        }
+
+        if (sstr==pstr) {
+            // 都向后移动
+            sstr++;
+            pstr++;
+            continue ;
+        }
+
+        // copy
+        cylen = pstr-sstr;
+        if (cylen>=out[i].bufflen)
+            cylen = out[i].bufflen-1;
+        memset(out[i].buff, 0, out[i].bufflen);
+        memcpy(out[i].buff, sstr, cylen);
+        i++;
+        pstr++;
+        sstr = pstr;
+    }
+
+    return i;
+}
 
 
 

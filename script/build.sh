@@ -2,13 +2,18 @@
 echo "build yt328 for arm"
 PWD=`pwd`
 echo "当前目录:${PWD}"
-export PATH=/usr/bin:/usr/bin:/bin:/usr/local/games:/usr/games:${PWD}/toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf/bin
 
 # 初始化参数
 EXESHELL_FILE=$0
 SOURCE_DIR=$1
 
 # 项目个性化的一些变量,需要检查不为空
+# qt库目录
+QTLIB_DIR=qt4.8.7
+# 编译器目录名称
+GCC_DIR=toolchain
+GCC_TAR=toolchain.tar.gz
+GCC_BIN_DIR=toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf/bin
 # 默认指定的工程目录
 DEFAULT_SOURCE=zyep_dctr_yt327
 # pro文件
@@ -20,20 +25,22 @@ VER_STR=APP_VERSION
 
 #######################################################
 # 以下为不修改部分,业务实现
+# 导环境变量
+export PATH=$PATH:${PWD}/$GCC_BIN_DIR
 # 检查环境
 echo "check qt && toolchain"
-if [ -d "toolchain" ];then
+if [ -d "$GCC_DIR" ];then
 	echo "has toolchain"
 else
 	echo "exe tar toolchain"
-	tar xvf toolchain.tar.gz
+	tar xvf $GCC_TAR
 fi
 
-if [ -d "qt4.8.7" ];then
-	echo "has qt4.8.7"
+if [ -d "$QTLIB_DIR" ];then
+	echo "has $QTLIB_DIR"
 else
 	echo "exe tar qt"
-	tar xvf qt4.8.7.tar.gz
+	tar xvf $QTLIB_DIR.tar.gz
 fi
 
 echo "check input args"
@@ -58,7 +65,7 @@ fi
 cd $SOURCE_DIR
 echo `pwd`
 echo "build qt ..."
-../qt4.8.7/bin/qmake $PRO_FILE
+../$QTLIB_DIR/bin/qmake $PRO_FILE
 make -j8
 echo "build qt done"
 ls

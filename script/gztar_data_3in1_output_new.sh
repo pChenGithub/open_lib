@@ -1,7 +1,7 @@
 #! /bin/bash
 
 # 环境变量
-#appversion=$1
+dest_tar=$1
 # 压缩目录
 RAR_DIR=data_3in1_output
 # 输出压缩包命名
@@ -15,6 +15,10 @@ app_def[0]="读卡器reader ZYTK_Reader_YT328_R zytk_reader zytk_reader /home/zh
 app_def[1]="40一体机(zytk) zytk40_yt328_dctr_new zytk_dctr zytk_dctr /home/zhh/work/ytdctr328/YT328门禁一体机 global.h" 
 app_def[2]="易通一体机(zyep) zyep_yt328_dctr_new zyep_dctr zyep_dctr /home/zhh/work/ytdctr328/02_YT328门禁一体机 global.h" 
 app_def[3]="易通云一体机(etc) zyetc_yt328_dctr zyetc_dctr zyetc_dctr /home/zhh/work/ytdctr328/YT328一体机"
+交叉编译工具
+GCC_HEAD=arm-linux-gnueabihf
+# gcc路径
+GCC_DIR=${PWD}/../../toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf
 # 变量定义结束
 
 ############################################################################
@@ -26,13 +30,13 @@ if [ "x0" != "x$?" ];then
 	echo "导入环境变量..."
 	PWD=`pwd`
 	echo "${PWD}"
-	export PATH=${PATH}:${PWD}/../toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf/bin
+	export PATH=${PATH}:${GCC_DIR}/bin
 fi
 
-#if [ "x${appversion}" = "x" ];then
-#	echo "没有带版本号，例如 ./gztar_data_3in1_output.sh 21.0929"
-#	exit 0
-#fi
+if [ "x${dest_tar}" = "x" ];then
+	echo "没有指定目标文件，例如 $0 $RAR_OUT"
+	exit 0
+fi
 
 cd ${RAR_DIR}
 #echo "---> ${app_def[0]}"
@@ -72,11 +76,11 @@ do
 done
 
 # 压缩文件
-tar zcf ../${RAR_OUT} *
+tar zcf ../${dest_tar} *
 
 # 还原路径
 cd -
-echo "${RAR_OUT} 压缩完成"
+echo "${dest_tar} 压缩完成"
 exit 0
 
 
