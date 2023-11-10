@@ -17,7 +17,7 @@ int main(int argc, char const *argv[])
     int ret = 0;
     MQClient* client;
     /* code */
-    ret = createMqttclient(&client, SERVERADDR, CLIENTID);
+    ret = createMqttclient(&client, SERVERADDR, CLIENTID, "sn", "sec");
     if (ret<0)
     {
         printf("创建mqtt客户端失败\n");
