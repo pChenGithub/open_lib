@@ -53,10 +53,14 @@ static void *waitMunlticaseMsg(void* arg) {
     return NULL;
 }
 
-int multicast_listen(handMultiaddrMst callback) {
+int multicast_listen(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* groupIp, int port) {
     int ret = 0;
     int socketfd = 0;
     pthread_t pid;
+
+    if (NULL==entry || NULL==groupIp)
+        return -TCPIPERR_CHECK_PARAM;
+
     //
     RECV_MSG_BODY* body = (RECV_MSG_BODY*)calloc(sizeof(RECV_MSG_BODY), 1);
     if (NULL==body) {
@@ -125,6 +129,8 @@ int multicast_listen(handMultiaddrMst callback) {
          goto error_bind;
     }
 
+    // 返回
+    *entry = body;
     return 0;
 
 error_bind:
@@ -135,7 +141,20 @@ error_malloc:
     return ret;
 }
 
-int multicast_sendmsg(char* buff, int len) {
+int multicast_listen_del(RECV_MSG_BODY* entry) {
+    if (NULL==entry)
+        return -TCPIPERR_CHECK_PARAM;
+    
+    // 关闭线程
+    pthread_cancel();
+    // 等待线程退出
+    pthread_join();
+    // 关闭fd
+    // 销毁内存
+    return 0;
+}
+
+int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
     int socketfd = 0;
     int ret = 0;
     // 创建套接字

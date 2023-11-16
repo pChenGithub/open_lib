@@ -10,7 +10,7 @@ static void recvmsg(handMulticastArg* arg) {
 int main(int argc, char const *argv[])
 {
     /* code */
-    int ret = multicast_listen(recvmsg);
+    int ret = multicast_listen(recvmsg,"224.0.1.1", 666);
     if (ret<0) {
         printf("监听失败, 错误码 %d\n", ret);
     }
