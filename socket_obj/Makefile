@@ -7,6 +7,9 @@ pro_gate ?= test_gate
 pro_dns ?= test_dns
 pro_link ?= test_link
 pro_dhcp ?= test_dhcp
+#
+pro_multicast_recv ?= test_nulticast_recv
+pro_multicast_send ?= test_nulticast_send
 
 #ARCH=arm
 #CFLAGS += -L/home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/arm-linux-gnueabihf/libc/lib/arm-linux-gnueabihf -lpthread
@@ -17,8 +20,8 @@ CFLAGS += -I../exeShell_obj/
 SOURCE_FILE += link/net_link.c link/net_opt.c link/net_netlink.c link/net_dns.c link/net_dhcp.c ../exeShell_obj/mixShell.c
 
 
-all: ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} ${pro_dhcp} 
-	$(DEBUGGER) ./${pro_gate} ${ARGS}
+all: ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} ${pro_dhcp}  ${pro_multicast_recv} ${pro_multicast_send}
+#	$(DEBUGGER) ./${pro_multicast_recv} ${ARGS}
 
 ${pro}: test.c ${SOURCE_FILE} ${LINK_LIBS}
 
@@ -32,5 +35,12 @@ ${pro_link} : test_link.c ${SOURCE_FILE} ${LINK_LIBS}
 
 ${pro_dhcp} : test_dhcp.c ${SOURCE_FILE} ${LINK_LIBS}
 
+#
+TCPIP_SOURCE += tcpIp/multicast.c
+${pro_multicast_recv} : test_nulticast_recv.c ${TCPIP_SOURCE} ${LINK_LIBS}
+
+${pro_multicast_send} : test_nulticast_send.c ${TCPIP_SOURCE} ${LINK_LIBS}
+
 clean:
 	rm ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} ${pro_dhcp} 
+	rm ${pro_multicast_recv} ${pro_multicast_send}
