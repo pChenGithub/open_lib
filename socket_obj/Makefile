@@ -37,9 +37,10 @@ ${pro_dhcp} : test_dhcp.c ${SOURCE_FILE} ${LINK_LIBS}
 
 #
 TCPIP_SOURCE += tcpIp/multicast.c
-${pro_multicast_recv} : test_nulticast_recv.c ${TCPIP_SOURCE} ${LINK_LIBS}
+${pro_multicast_recv} : ${TCPIP_SOURCE} ${LINK_LIBS}
 
-${pro_multicast_send} : test_nulticast_send.c ${TCPIP_SOURCE} ${LINK_LIBS}
+${pro_multicast_send} : ${TCPIP_SOURCE} ${LINK_LIBS}
+
 
 clean:
 	rm ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} ${pro_dhcp} 
