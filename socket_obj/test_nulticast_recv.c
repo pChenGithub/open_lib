@@ -7,18 +7,21 @@ static void recvmsg(handMulticastArg* arg) {
     printf("<== %s\n", arg->recvBuff);
 }
 
+static RECV_MSG_BODY *body = NULL;
+
 int main(int argc, char const *argv[])
 {
     /* code */
-    int ret = multicast_listen(recvmsg,"224.0.1.1", 666);
-    if (ret<0) {
-        printf("监听失败, 错误码 %d\n", ret);
-    }
+    while (1) {
+        int ret = multicast_listen_start(&body, recvmsg,"224.0.1.1", 10000);
+        if (ret<0) {
+            printf("监听失败, 错误码 %d\n", ret);
+        }
 
-    while (1)
-    {
-        sleep(100);
+        usleep(10000);
+        multicast_listen_del(body);
+        //body = NULL;
+        usleep(10000);
     }
-
     return 0;
 }

@@ -10,9 +10,16 @@ int main(int argc, char const *argv[])
 {
     /* code */
     char sendbuff[16] = "hellword";
-    int ret = multicast_sendmsg(sendbuff, strlen(sendbuff)+1, "224.0.1.1", 666);
-    if (ret<0) {
-        printf("发送失败, 错误码 %d\n", ret);
+
+    while (1)
+    {
+        int ret = multicast_sendmsg(sendbuff, strlen(sendbuff)+1, "224.0.1.1", 10000);
+        if (ret<0) {
+            printf("发送失败, 错误码 %d\n", ret);
+        }
+
+        sleep(5);
     }
+
     return 0;
 }

@@ -20,13 +20,6 @@ struct ip_mreq
 };
 #endif
 
-typedef struct {
-    // 回调函数参数
-    handMulticastArg callbackArg;
-    // 回调函数
-    handMultiaddrMst fn;
-} RECV_MSG_BODY;
-
 static void *waitMunlticaseMsg(void* arg) {
     // 创建线程,等待组播消息
     printf("接收线程开始\n");
@@ -53,13 +46,15 @@ static void *waitMunlticaseMsg(void* arg) {
     return NULL;
 }
 
-int multicast_listen(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* groupIp, int port) {
+int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* groupIp, int port) {
     int ret = 0;
     int socketfd = 0;
-    pthread_t pid;
+    //pthread_t pid;
 
     if (NULL==entry || NULL==groupIp)
         return -TCPIPERR_CHECK_PARAM;
+
+    // 检查IP的合法性 groupIp
 
     //
     RECV_MSG_BODY* body = (RECV_MSG_BODY*)calloc(sizeof(RECV_MSG_BODY), 1);
@@ -79,7 +74,7 @@ int multicast_listen(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* gro
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(struct sockaddr_in));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(9999);    // 大端
+    addr.sin_port = htons(port);    // 大端
     addr.sin_addr.s_addr = htonl(INADDR_ANY);  // 0.0.0.0
     ret = bind(socketfd, (struct sockaddr*)&addr, sizeof(addr));
     if (-1==ret) {
@@ -109,7 +104,7 @@ int multicast_listen(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* gro
     // 注意加入这个组 224.0.1.0
     struct ip_mreq mreq; // 多播地址结构体
     memset(&mreq, 0, sizeof(struct ip_mreq));
-    mreq.imr_multiaddr.s_addr = inet_addr("224.0.1.0");
+    mreq.imr_multiaddr.s_addr = inet_addr(groupIp);
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);	
     // 加入组
 	ret = setsockopt(socketfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
@@ -123,11 +118,13 @@ int multicast_listen(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* gro
     body->callbackArg.socketfd = socketfd;
     body->fn = callback;
     // 接收端,等待接受数据
-    pid = pthread_create(&pid, NULL, waitMunlticaseMsg, body);
+    ret = pthread_create(&(body->pid), NULL, waitMunlticaseMsg, body);
     if (ret<0) {
         ret = -TCPIPERR_PTREAD_CREAT;
          goto error_bind;
     }
+    //
+    pthread_detach(body->pid);
 
     // 返回
     *entry = body;
@@ -146,17 +143,21 @@ int multicast_listen_del(RECV_MSG_BODY* entry) {
         return -TCPIPERR_CHECK_PARAM;
     
     // 关闭线程
-    pthread_cancel();
+    pthread_cancel(entry->pid);
     // 等待线程退出
-    pthread_join();
+    pthread_join(entry->pid, NULL);
     // 关闭fd
+    close(entry->callbackArg.socketfd);
     // 销毁内存
+    free(entry);
     return 0;
 }
 
 int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
     int socketfd = 0;
     int ret = 0;
+    // 检查IP的合法性
+
     // 创建套接字
     socketfd = socket(AF_INET, SOCK_DGRAM, 0);
     if (-1==socketfd) {
@@ -196,9 +197,9 @@ int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
     struct sockaddr_in cliaddr;
     memset(&cliaddr,0,sizeof(cliaddr));
     cliaddr.sin_family = AF_INET;
-    cliaddr.sin_port = htons(9999); // 接收端需要绑定9999端口
+    cliaddr.sin_port = htons(port); // 接收端需要绑定9999端口
     // 发送组播消息, 需要使用组播地址, 和设置组播属性使用的组播地址一致就可以
-    inet_pton(AF_INET, "224.0.1.0", &cliaddr.sin_addr.s_addr);
+    inet_pton(AF_INET, groupIp, &cliaddr.sin_addr.s_addr);
 
     // 数据广播
     ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)&cliaddr, sizeof(struct sockaddr_in));

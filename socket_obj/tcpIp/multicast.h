@@ -1,6 +1,6 @@
 #ifndef  __MULTICAST_H__
 #define __MULTICAST_H__
-
+#include <pthread.h>
 // 回调参数声明
 typedef struct {
     // 接受消息的套接字
@@ -10,6 +10,15 @@ typedef struct {
 } handMulticastArg;
 // 回调声明
 typedef void(*handMultiaddrMst)(handMulticastArg* arg);
+// 组播监听服务实例
+typedef struct {
+    // 回调函数参数
+    handMulticastArg callbackArg;
+    // 回调函数
+    handMultiaddrMst fn;
+    // 线程号
+    pthread_t pid;
+} RECV_MSG_BODY;
 // 启动组播监听, groupIp D类IP地址,port 端口,,监听和发送的groupIp和port要成对
 /*
 组播需要使用组播地址，在 IPv4 中它的范围从 224.0.0.0 到 239.255.255.255，
@@ -24,7 +33,17 @@ typedef void(*handMultiaddrMst)(handMulticastArg* arg);
 224.0.2.0 ~ 238.255.255.255: 用户可用的组播地址（临时组地址），全网范围内有效
 239.0.0.0 ~ 239.255.255.255: 为本地管理组播地址，仅在特定的本地范围内有效
 */
-int multicast_listen(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* groupIp, int port);
+// **************************************************************
+/**
+ * @brief 启动组播监听服务,监听指定组播地址和端口的消息,
+ * 
+ * @param entry             返回RECV_MSG_BODY,要在用完之后调用multicast_listen_del回收
+ * @param callback      实现一个自定义的函数处理收到的组播消息,可以传NULL
+ * @param groupIp       组播IP地址
+ * @param port              组播端口,需要大于10000,或者没有被占用的端口
+ * @return * int 
+ */
+int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* groupIp, int port);
 // 销毁组播监听
 int multicast_listen_del(RECV_MSG_BODY* entry);
 // 发送组播消息(字符串len长度包括\0, 数组指定长度)
