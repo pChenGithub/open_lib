@@ -1,6 +1,3 @@
-#CC = /home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/bin/arm-linux-gnueabihf-gcc
-#CC = /home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/bin/arm-linux-gnueabihf-gcc
-#CC = /home/zhh/work/yt328_reader/020.源代码/toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc
 pro ?= test
 pro_nl ?= test_nl
 pro_gate ?= test_gate
@@ -11,15 +8,19 @@ pro_dhcp ?= test_dhcp
 pro_multicast_recv ?= test_nulticast_recv
 pro_multicast_send ?= test_nulticast_send
 
+#CC = /home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/bin/arm-linux-gnueabihf-gcc
+#CC = /home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/bin/arm-linux-gnueabihf-gcc
+#CC = /home/zhh/work/yt328_reader/020.源代码/toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf/bin/arm-linux-gnueabihf-gcc
 #ARCH=arm
 #CFLAGS += -L/home/zhh/work/YT312/02_YT312门禁控制器/gcc-linaro-arm-linux-gnueabihf-4.7-2013.03-20130313_linux/arm-linux-gnueabihf/libc/lib/arm-linux-gnueabihf -lpthread
 #CFLAGS += -L/home/zhh/work/yt328_reader/020.源代码/toolchain/gcc-linaro-5.5.0-2017.10-x86_64_arm-linux-gnueabihf/arm-linux-gnueabihf/libc/lib -lpthread
+
+# x86
 LINK_LIBS += -lpthread
+
+
 CFLAGS += -I../exeShell_obj/
-
 SOURCE_FILE += link/net_link.c link/net_opt.c link/net_netlink.c link/net_dns.c link/net_dhcp.c ../exeShell_obj/mixShell.c
-
-
 all: ${pro} ${pro_nl} ${pro_gate} ${pro_dns} ${pro_link} ${pro_dhcp}  ${pro_multicast_recv} ${pro_multicast_send}
 #	$(DEBUGGER) ./${pro_multicast_recv} ${ARGS}
 

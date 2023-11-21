@@ -3,9 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 
-static void recvmsg(handMulticastArg* arg) {
-}
-
 int main(int argc, char const *argv[])
 {
     /* code */
@@ -13,12 +10,12 @@ int main(int argc, char const *argv[])
 
     while (1)
     {
-        int ret = multicast_sendmsg(sendbuff, strlen(sendbuff)+1, "224.0.1.1", 10000);
+        int ret = multicast_sendmsg(sendbuff, strlen(sendbuff)+1, "224.0.1.0", 9999);
         if (ret<0) {
             printf("发送失败, 错误码 %d\n", ret);
         }
 
-        sleep(5);
+        sleep(10);
     }
 
     return 0;
