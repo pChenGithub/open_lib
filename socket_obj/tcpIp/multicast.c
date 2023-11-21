@@ -229,7 +229,7 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigne
 
 #if 1
     if (ms>0) {
-        // 指定了等待时间,等待回复消息
+        // 指定了等待时间,等待回复消息,这里如果不需要知道发送端地址,都指定为空
         ret = recvfrom(socketfd, buff, len, 0, NULL, NULL);
         if (-1==ret) {
             printf("接收消息失败, errno %d\n", errno);

@@ -12,7 +12,7 @@ typedef struct {
     int socketfd;
     // 消息源地址
     struct sockaddr_in srcaddr;
-    int len;
+    socklen_t  len;
     // 接收到的广播消息缓存
     char recvBuff[128];
 } handMulticastArg;
