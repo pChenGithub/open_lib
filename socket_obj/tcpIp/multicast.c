@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+// https://blog.csdn.net/weixin_44522306/article/details/119680394
 #if 0
 struct ip_mreq
 {
@@ -31,7 +32,7 @@ static void *waitMunlticaseMsg(void* arg) {
             continue;
         }
 
-        //printf("获取到消息 %s\n", callArg->recvBuff);
+        printf("获取到消息 %s, 地址 %s\n", callArg->recvBuff, inet_ntoa(callArg->srcaddr.sin_addr));
 
         if (NULL!=body->fn) {
             body->fn(callArg);
@@ -184,12 +185,22 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigne
         return -TCPIPERR_SOCKET_CREATE;
     }
 
-#if 1
+#if 0
+    // 设置端口复用（推荐）
+    int optval = 1; // 这里设置为端口复用，所以随便写一个值
+    ret = setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+    if (-1==ret) {
+        ret = -TCPIPERR_SOCKET_SETSCOKOPT;
+        goto error_set;
+    }
+#endif
+
+#if 0
     // 加入组播
     #if 0
     struct in_addr opt;
     // 将组播地址初始化到这个结构体成员中即可
-    inet_pton(AF_INET, "224.0.1.0", &opt.s_addr);
+    inet_pton(AF_INET, groupIp, &opt.s_addr);
     ret = setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_IF, &opt, sizeof(opt));
     if (-1==ret) {
         printf("加入组播组失败, errno %d\n", errno);
@@ -210,7 +221,7 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigne
         goto error_set;
     }
     #endif
-    #endif
+#endif
 
     //  设置发送地址,地址即是组播地址
     struct sockaddr_in cliaddr;
@@ -236,7 +247,7 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigne
             ret = -TCPIPERR_RECVMSG;
         }
     }
-    #endif
+#endif
 
 error_set:
     close(socketfd);
