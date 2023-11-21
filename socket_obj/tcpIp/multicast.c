@@ -1,12 +1,6 @@
 #include "multicast.h"
 #include "tcpIp_errno.h"
-#include <sys/types.h>          /* See NOTES */
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <net/if.h>
-#include <arpa/inet.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,8 +23,9 @@ static void *waitMunlticaseMsg(void* arg) {
     // 设置线程名字
     while (1) {
         //printf("等待消息\n");
-        // ret = recvfrom(callArg->socketfd, callArg->recvBuff, sizeof(callArg->recvBuff), 0, (struct sockaddr *)&sendaddr, &len);
-        ret = recvfrom(callArg->socketfd, callArg->recvBuff, sizeof(callArg->recvBuff), 0, NULL, NULL);
+        callArg->len = sizeof(struct sockaddr_in);
+        //ret = recvfrom(callArg->socketfd, callArg->recvBuff, sizeof(callArg->recvBuff), 0, NULL, NULL);
+        ret = recvfrom(callArg->socketfd, callArg->recvBuff, sizeof(callArg->recvBuff), 0, (struct sockaddr *)(&(callArg->srcaddr)), &(callArg->len));
         if (-1==ret) {
             printf("接收消息失败, 错误码 %d\n", errno);
             continue;
@@ -153,9 +148,33 @@ int multicast_listen_del(RECV_MSG_BODY* entry) {
     return 0;
 }
 
+int multicast_resp(RECV_MSG_BODY* entry, char* buff, int len) {
+    int ret = 0;
+    if (NULL == entry || NULL == buff || len <= 0)
+        return -TCPIPERR_CHECK_PARAM;
+
+        #if 1
+    // 数据广播
+    ret = sendto(entry->callbackArg.socketfd, buff, len, 0, (struct sockaddr *)(&(entry->callbackArg.srcaddr)), entry->callbackArg.len);
+    if (-1==ret) {
+        printf("发送组播失败, errno %d\n", errno);
+        ret = -TCPIPERR_SENDMSG;
+    }
+    #endif
+
+    return 0;
+}
+
 int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
+    return multicast_sendmsg_wait(buff, len, groupIp, port, 0);
+}
+
+int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigned int ms) {
     int socketfd = 0;
     int ret = 0;
+
+    if (NULL==buff || len<=0 || NULL==groupIp)
+        return -TCPIPERR_CHECK_PARAM;
     // 检查IP的合法性
 
     // 创建套接字
@@ -165,7 +184,7 @@ int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
         return -TCPIPERR_SOCKET_CREATE;
     }
 
-#if 0
+#if 1
     // 加入组播
     #if 0
     struct in_addr opt;
@@ -180,7 +199,7 @@ int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
     #else
     struct ip_mreq mreq;
     // 设置多播地址
-    mreq.imr_multiaddr.s_addr = inet_addr("224.0.1.0");
+    mreq.imr_multiaddr.s_addr = inet_addr(groupIp);
     // 设置使用该多播地址发送数据时使用的网卡ip
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);	
     // 调用setsockopt
@@ -202,14 +221,26 @@ int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
     inet_pton(AF_INET, groupIp, &cliaddr.sin_addr.s_addr);
 
     // 数据广播
-    ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)&cliaddr, sizeof(struct sockaddr_in));
+    ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr_in));
     if (-1==ret) {
         printf("发送组播失败, errno %d\n", errno);
         ret = -TCPIPERR_SENDMSG;
     }
 
+#if 1
+    if (ms>0) {
+        // 指定了等待时间,等待回复消息
+        ret = recvfrom(socketfd, buff, len, 0, NULL, NULL);
+        if (-1==ret) {
+            printf("接收消息失败, errno %d\n", errno);
+            ret = -TCPIPERR_RECVMSG;
+        }
+    }
+    #endif
+
 error_set:
     close(socketfd);
     return ret;
 }
+
 
