@@ -1,10 +1,18 @@
 #ifndef  __MULTICAST_H__
 #define __MULTICAST_H__
 #include <pthread.h>
+#include <netinet/in.h>
+#include <sys/types.h>          /* See NOTES */
+#include <sys/socket.h>
+#include <net/if.h>
+#include <arpa/inet.h>
 // 回调参数声明
 typedef struct {
     // 接受消息的套接字
     int socketfd;
+    // 消息源地址
+    struct sockaddr_in srcaddr;
+    int len;
     // 接收到的广播消息缓存
     char recvBuff[128];
 } handMulticastArg;
@@ -18,6 +26,8 @@ typedef struct {
     handMultiaddrMst fn;
     // 线程号
     pthread_t pid;
+    // 回复广播消息的发送缓存
+    char sendBuff[128];
 } RECV_MSG_BODY;
 // 启动组播监听, groupIp D类IP地址,port 端口,,监听和发送的groupIp和port要成对
 /*
@@ -46,6 +56,14 @@ typedef struct {
 int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* groupIp, int port);
 // 销毁组播监听
 int multicast_listen_del(RECV_MSG_BODY* entry);
+// 回复组播消息
+int multicast_resp(RECV_MSG_BODY* entry, char* buff, int len);
+//*************************************************************************
 // 发送组播消息(字符串len长度包括\0, 数组指定长度)
 int multicast_sendmsg(char* buff, int len, char* groupIp, int port);
+// 发送组播消息,并超时等到回复
+// ms指定为0表示不等带回复
+int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigned int ms);
 #endif
+
+
