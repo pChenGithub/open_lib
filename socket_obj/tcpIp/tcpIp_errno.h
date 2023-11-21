@@ -8,6 +8,7 @@
 #define TCPIPERR_PTREAD_CREAT 5     // 创建线程失败
 #define TCPIPERR_MALLOCA 6     // 分配内存失败
 #define TCPIPERR_SENDMSG 7     // 发送组播失败
+#define TCPIPERR_RECVMSG 8     // 接收消息失败
 
 
 #endif
