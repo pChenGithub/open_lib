@@ -9,6 +9,8 @@
 #define TCPIPERR_MALLOCA 6     // 分配内存失败
 #define TCPIPERR_SENDMSG 7     // 发送组播失败
 #define TCPIPERR_RECVMSG 8     // 接收消息失败
+#define TCPIPERR_WAITRECV_TIMEOUT  9     // 等待数据超时
+#define TCPIPERR_SELECT  10     // select失败
 
 
 #endif
