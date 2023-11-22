@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 // https://blog.csdn.net/weixin_44522306/article/details/119680394
 #if 0
@@ -167,23 +170,25 @@ int multicast_resp(RECV_MSG_BODY* entry, char* buff, int len) {
 }
 
 int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
-    return multicast_sendmsg_wait(buff, len, groupIp, port, 0);
+    return multicast_sendmsg_wait(buff, len, groupIp, port, NULL, 0);
 }
 
-int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigned int ms) {
+int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port,  handMulticastRsp callbk, unsigned int ms) {
     int socketfd = 0;
     int ret = 0;
+    int selret = 0;
 
     if (NULL==buff || len<=0 || NULL==groupIp)
         return -TCPIPERR_CHECK_PARAM;
     // 检查IP的合法性
 
     // 创建套接字
-    socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+    socketfd = socket(AF_INET, SOCK_DGRAM|SOCK_NONBLOCK, 0);
     if (-1==socketfd) {
         printf("创建套接字失败, errno %d\n", errno);
         return -TCPIPERR_SOCKET_CREATE;
     }
+    // 设置为非阻塞
 
 #if 0
     // 设置端口复用（推荐）
@@ -238,7 +243,8 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigne
         ret = -TCPIPERR_SENDMSG;
     }
 
-#if 1
+#if 0
+#if 0
     if (ms>0) {
         // 指定了等待时间,等待回复消息,这里如果不需要知道发送端地址,都指定为空
         ret = recvfrom(socketfd, buff, len, 0, NULL, NULL);
@@ -247,7 +253,49 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigne
             ret = -TCPIPERR_RECVMSG;
         }
     }
+    #else
+    while ((ret=recvfrom(socketfd, buff, len, 0, NULL, NULL))>0)
+    {
+        printf("获取消息 %s, ret %d\n", buff, ret);
+    }
+    printf("<== ret %d\n", ret);
 #endif
+#endif
+
+    fd_set rfds;
+    struct timeval tv;
+    FD_ZERO(&rfds);
+    FD_SET(socketfd, &rfds);
+    // 设置超时时间
+    tv.tv_sec = 0;
+    tv.tv_usec = 10000;
+
+    // 预计读取数据为超时
+    ret = -TCPIPERR_WAITRECV_TIMEOUT;
+start_select:
+    selret = select(socketfd+1, &rfds, NULL, NULL, &tv);
+    if (-1==selret) {
+        ret = -TCPIPERR_SELECT;
+    } else if (0 == selret) {
+        printf("等待数据超时\n");
+        //ret = -TCPIPERR_WAITRECV_TIMEOUT;
+    } else {
+        // >0,有数据
+        ret = recvfrom(socketfd, buff, len, 0, NULL, NULL);
+        if (-1==ret) {
+            ret = -TCPIPERR_RECVMSG;
+            goto error_set;
+        }
+        // printf("获取消息 %s, ret %d\n", buff, ret);
+
+        if (ret>0 && NULL!=callbk) {
+            callbk(buff, ret);
+        }
+        // 标记读取成功,
+        ret = 0;
+        // 重新监听是否有数据返回
+        goto start_select;
+    }
 
 error_set:
     close(socketfd);

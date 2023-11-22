@@ -61,9 +61,11 @@ int multicast_resp(RECV_MSG_BODY* entry, char* buff, int len);
 //*************************************************************************
 // 发送组播消息(字符串len长度包括\0, 数组指定长度)
 int multicast_sendmsg(char* buff, int len, char* groupIp, int port);
+// 广播处理回复消息回调
+typedef void(*handMulticastRsp)(char* rspstr, int len);
 // 发送组播消息,并超时等到回复
 // ms指定为0表示不等带回复
-int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port, unsigned int ms);
+int multicast_sendmsg_wait(char *buff, int len, char *groupIp, int port, handMulticastRsp callbk, unsigned int ms);
 #endif
 
 
