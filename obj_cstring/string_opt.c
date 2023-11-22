@@ -1,6 +1,7 @@
 #include "string_opt.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 
 // 字符串的16进制转数值的16进制
 // 需要自己控制输入与输出的长度，函数内部只判断输出是不是为0
