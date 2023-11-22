@@ -204,8 +204,8 @@ int cutStr(const char *src, char cutchar, CUT_STR *out, int outlen)
 
     int cylen = 0;
     int i = 0;
-    char* pstr = src;
-    char* sstr = src;
+    const char* pstr = src;
+    const char* sstr = src;
     // 遍历字符串
     while (0!=(*pstr) && i<outlen) {
         if (cutchar!=(*pstr)) {
