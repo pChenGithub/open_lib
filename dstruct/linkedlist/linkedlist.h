@@ -4,8 +4,8 @@
 extern "C" {
 #endif
 
-#define LKLIST_ERR_CHECKPARAM   1   // ²ÎÊý´íÎó
-#define LKLIST_ERR_CALLOCFAIL   2   // Ö´ÐÐcallocÊ§°Ü
+#define LKLIST_ERR_CHECKPARAM   1   // å‚æ•°é”™è¯¯
+#define LKLIST_ERR_CALLOCFAIL   2   // æ‰§è¡Œcallocå¤±è´¥
 
 typedef struct {
     LINK_NODE* pre;
@@ -14,48 +14,48 @@ typedef struct {
 
 typedef struct {
     LINK_NODE node;
-    int nodecount;      // Á´±í½ÚµãÊýÁ¿,²»°üÀ¨head
+    int nodecount;      // é“¾è¡¨èŠ‚ç‚¹æ•°é‡,ä¸åŒ…æ‹¬head
 } LINK_HEAD;
 
-// ¾²Ì¬ÉêÇëÒ»¸öÁ´±íÍ·
+// é™æ€ç”³è¯·ä¸€ä¸ªé“¾è¡¨å¤´
 #define INIT_LINKEDLIST(head) \
     LINK_HEAD head = { \
         {&head, &head}, \
         0, \
     } \
 
-// ´´½¨Ò»¸öÁ´±íÍ·
+// åˆ›å»ºä¸€ä¸ªé“¾è¡¨å¤´
 int init_linkedlist(LINK_HEAD** head);
-// ÊÍ·ÅÁ´±íÍ·
+// é‡Šæ”¾é“¾è¡¨å¤´
 int free_linkedlist(LINK_HEAD* head);
-// ²åÈëÒ»Ïî
-// index±íÊ¾ÔÚÄÄ¸öµØ·½²åÈë,
-// index=0±íÊ¾ÔÚheadºóÃæ²åÈë,1±íÊ¾ÔÚµÚÒ»¸önodeºó²åÈë,-1±íÊ¾ÔÚµ¹ÊýµÚÒ»¸önode²åÈë
+// æ’å…¥ä¸€é¡¹
+// indexè¡¨ç¤ºåœ¨å“ªä¸ªåœ°æ–¹æ’å…¥,
+// index=0è¡¨ç¤ºåœ¨headåŽé¢æ’å…¥,1è¡¨ç¤ºåœ¨ç¬¬ä¸€ä¸ªnodeåŽæ’å…¥,-1è¡¨ç¤ºåœ¨å€’æ•°ç¬¬ä¸€ä¸ªnodeæ’å…¥
 int insert_lknode(LINK_HEAD* head, LINK_NODE* node, int index);
-// Ç°²å/ºó²å
+// å‰æ’/åŽæ’
 int insert_head(LINK_HEAD* head, LINK_NODE* node);
 int insert_tail(LINK_HEAD* head, LINK_NODE* node);
-// É¾³ýÒ»Ïî
-// 1±íÊ¾ÔÚµÚÒ»¸önode,-1±íÊ¾µ¹ÊýµÚÒ»¸önode
+// åˆ é™¤ä¸€é¡¹
+// 1è¡¨ç¤ºåœ¨ç¬¬ä¸€ä¸ªnode,-1è¡¨ç¤ºå€’æ•°ç¬¬ä¸€ä¸ªnode
 int remove_lknode(LINK_HEAD* head, int index, LINK_NODE** node);
-// ±éÀú
+// éåŽ†
 typedef int (*hand_node)(LINK_NODE* node);
 int foreach_lklist(LINK_HEAD* head, hand_node hand);
-// head:Á´±íÍ·Ö¸Õë,node:½ÚµãÖ¸Õë
+// head:é“¾è¡¨å¤´æŒ‡é’ˆ,node:èŠ‚ç‚¹æŒ‡é’ˆ
 #define FOREACH_LKLIST(head, type, member) \
     LINK_NODE* _mnode = NULL; \
     for (_mnode=head->node.next;_mnode!=(&head->node);_mnode=node->next)
-// ½á¹¹Ìå²Ù×÷
-// ¼ÆËãÓòÔÚ½á¹¹ÌåÖÐµÄµØÖ·Æ«ÒÆ
+// ç»“æž„ä½“æ“ä½œ
+// è®¡ç®—åŸŸåœ¨ç»“æž„ä½“ä¸­çš„åœ°å€åç§»
 #define OFFSETOF(type, member) ((size_t)&((type*)0)->member)
-// ¸ù¾ÝnodeµØÖ·»ñÈ¡½á¹¹ÌåµØÖ·
-// ptr:nodeÖ¸Õë,type:ÊµÌå½á¹¹ÌåÀàÐÍ,member:nodeÔÚ½á¹¹ÌåµÄÓòÃû³Æ
+// æ ¹æ®nodeåœ°å€èŽ·å–ç»“æž„ä½“åœ°å€
+// ptr:nodeæŒ‡é’ˆ,type:å®žä½“ç»“æž„ä½“ç±»åž‹,member:nodeåœ¨ç»“æž„ä½“çš„åŸŸåç§°
 #define CONTAINER_OF(ptr, type, member) \
 ({ \
     const typeof(((type*)0)->member) _tmpptr = (ptr); \
     (type*)((char*)ptr-OFFSETOF(type, member)); \
 })
-// Çå¿ÕÁ´±í
+// æ¸…ç©ºé“¾è¡¨
 int clear_lklist(LINK_HEAD* head, hand_node hand);
 #define CLEAR_LKLIST(head, type, member) ( \
     LINK_NODE* _mnode = NULL; \
