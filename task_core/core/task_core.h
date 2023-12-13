@@ -1,18 +1,24 @@
 #pragma onece
-#include "../../dstruct/linkedlist/linkedlist.h"
+#include "linkedlist/linkedlist.h"
 #include <pthread.h>
+#include <semaphore.h>
 
+typedef void(*DO_TASK_FUNC)(void);
 typedef struct {
     // 
     pthread_t pid;
     unsigned int status;
+    // 任务线程序号
+    unsigned int NO;
+    //
+    DO_TASK_FUNC dofunc;
+    // 线程等待变量
+    sem_t wait_task;
 } THREAD_ENTRY;
-#define MAX_THREAD_COUNT    10
+#define MAX_THREAD_COUNT    30
 // 线程状态的定义 status
 #define PTHREAD_STA_RUN     0x01
 #define PTHREAD_STA_BUSY    0x02
-
-
 
 typedef struct  {
     /**
@@ -20,8 +26,8 @@ typedef struct  {
      * 2 独占任务,将会查找空闲线程,执行
      * 3 
      */
-    LINK_HEAD task_queue;
-    LINK_HEAD task_lists;
+    LINK_HEAD *task_queue;
+    LINK_HEAD *task_lists;
     //
     THREAD_ENTRY threads[MAX_THREAD_COUNT];
     unsigned int thread_count;
