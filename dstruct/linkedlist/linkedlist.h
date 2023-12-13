@@ -7,9 +7,9 @@ extern "C" {
 #define LKLIST_ERR_CHECKPARAM   1   // 参数错误
 #define LKLIST_ERR_CALLOCFAIL   2   // 执行calloc失败
 
-typedef struct {
-    LINK_NODE* pre;
-    LINK_NODE* next;
+typedef struct _node{
+    struct _node* pre;
+    struct _node* next;
 } LINK_NODE;
 
 typedef struct {
