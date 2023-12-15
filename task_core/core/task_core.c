@@ -5,26 +5,67 @@
 #include <string.h>
 #include <unistd.h>
 
+// 处理其他提交任务
+static void hand_other_task(void* arg) {
+    THREAD_ENTRY *ppthread = (THREAD_ENTRY*) arg;
+    TASK_ENTRY *entry = (TASK_ENTRY *)(ppthread->task_entry);
+
+    //printf("线程 %d 处理其他任务\n", ppthread->NO);
+    //printf("ttttttt1  %d\n", ppthread->NO);
+    ppthread->body->cbk();
+    //printf("ttttttt2  %d\n", ppthread->NO);
+    // 执行任务结束,清理任务
+    free(ppthread->body);
+    ppthread->body = NULL;
+}
 // 处理队列任务实现
-static void hand_queue_task() {
-    printf("处理队列任务\n");
-    while (1)
+static void hand_queue_task(void* arg) {
+    THREAD_ENTRY *ppthread = (THREAD_ENTRY*) arg;
+    TASK_ENTRY *entry = (TASK_ENTRY *)(ppthread->task_entry);
+    LINK_NODE *node = NULL;
+    int ret = 0;
+
+    //printf("线程 %d 处理队列任务, 任务数量 %d\n", ppthread->NO, entry->task_queue->nodecount);
+
+    // 加锁
+    // remove_lknode
+    // 解锁
+    while (0==(ret=remove_lknode(entry->task_queue, 1, &node)))
     {
-        printf("处理任务...\n");
-        sleep(10);
+        // 获取任务实例,处理任务
+        TASK_BODY* body = CONTAINER_OF(node, TASK_BODY, node);
+        body->cbk();
+        // 销毁
+        free(body);
     }
 }
 
 static void* do_thread(void* arg) {
     // 获取线程信息
     THREAD_ENTRY *ppthread = (THREAD_ENTRY*) arg;
+    TASK_ENTRY *entry = (TASK_ENTRY *)(ppthread->task_entry);
     printf("启动线程 %d\n", ppthread->NO);
 
+    // 标记线程运行
+    ppthread->status |= PTHREAD_STA_RUN;
     while (1)
     {
+        ppthread->status &= (~PTHREAD_STA_BUSY);
+        // 修改PTHREAD_STA_PICK比较关键,加锁保护
+        if (0!=pthread_mutex_trylock(&entry->lock_threads)) {
+            //printf("获取锁失败...56, 将会一直等待\n");
+            usleep(10000);
+            pthread_mutex_lock(&entry->lock_threads);
+        }
+        // 每次执行完提交的任务之后,自动重新标记为可以选中,等待新任务
+        ppthread->status &= (~PTHREAD_STA_PICK);
+        pthread_mutex_unlock(&entry->lock_threads);
+
         sem_wait(&(ppthread->wait_task));
-        if (NULL!=ppthread->dofunc)
-            ppthread->dofunc();
+        ppthread->status |= PTHREAD_STA_BUSY;
+
+        if (NULL != ppthread->dofunc)
+            ppthread->dofunc(ppthread);
     }
 }
 // 停止所有的线程,遍历数组
@@ -60,6 +101,18 @@ int start_task_core(TASK_ENTRY **entry, unsigned int threadn)
     if (NULL==pptask)
         return -TASK_CORE_MALLOC;
 
+    // 初始化链表x2
+    ret = init_linkedlist(&(pptask->task_queue));
+    if (ret<0) {
+        ret = -TASK_CORE_INIT_LINKED;
+        goto err_task_queue;
+    }
+    ret = init_linkedlist(&(pptask->task_lists));
+    if (ret<0) {
+        ret = -TASK_CORE_INIT_LINKED;
+        goto err_task_lists;
+    }
+
     if (threadn>MAX_THREAD_COUNT)
         threadn = MAX_THREAD_COUNT;
 
@@ -68,6 +121,7 @@ int start_task_core(TASK_ENTRY **entry, unsigned int threadn)
     int i = 0;
     for (; i < threadn; i++) {
         ppthread[i].NO = i;
+        ppthread[i].task_entry = pptask;
         sem_init(&(ppthread[i].wait_task), 0, 0);
         // 启动线程
         ret = pthread_create(&(ppthread[i].pid), NULL, do_thread, ppthread+i);
@@ -75,33 +129,35 @@ int start_task_core(TASK_ENTRY **entry, unsigned int threadn)
             ret = -TASK_CORE_THREAD_CREATE;
             goto err_pthread_c;
         }
-        ppthread[i].status |= PTHREAD_STA_RUN;
+        // 指定默认回调
+        ppthread[i].dofunc = hand_other_task;
+        // 等待启动完成
+        while (!(ppthread[i].status&PTHREAD_STA_RUN)) {
+            //printf("等待启动 %d\n", ppthread[i].NO);
+            usleep(10000);
+        }
     }
     pptask->thread_count = i ;
     printf("线程数量 %d\n", pptask->thread_count);
 
-    // 初始化链表x2
-    ret = init_linkedlist(&(pptask->task_queue));
-    if (ret<0) {
-        ret = -TASK_CORE_INIT_LINKED;
-        goto err_pthread_c;
-    }
-    ret = init_linkedlist(&(pptask->task_lists));
-    if (ret<0) {
-        ret = -TASK_CORE_INIT_LINKED;
-        goto err_task_lists;
-    }
-
     // 第一个线程用于检查队列任务,初始化,开放
     ppthread[0].dofunc = hand_queue_task;
-    sem_post(&(ppthread[0].wait_task));
+
+    ret = pthread_mutex_init(&pptask->lock_threads, NULL);
+    if (0!=ret) {
+        ret = -TASK_CORE_INIT_MUTEX_LOCK;
+        goto err_pthread_c;
+    }
 
     *entry = pptask;
     return 0;
+
+err_pthread_c:
+    clear_pthreads(pptask); 
+    free_linkedlist(pptask->task_lists);
 err_task_lists:
     free_linkedlist(pptask->task_queue);
-err_pthread_c:
-    clear_pthreads(pptask);
+err_task_queue:
     free(pptask);
     return ret;
 }
@@ -109,8 +165,102 @@ err_pthread_c:
 void stop_task_core(TASK_ENTRY* entry) {
     if (NULL==entry)
         return ;
-    free_linkedlist(entry->task_lists);
-    free_linkedlist(entry->task_queue);
+
+    pthread_mutex_destroy(&entry->lock_threads);
+    // 清理线程
     clear_pthreads(entry);
+    // 清理链表
+    CLEAR_LKLIST(entry->task_lists, TASK_BODY, node);
+    free_linkedlist(entry->task_lists);
+    CLEAR_LKLIST(entry->task_queue, TASK_BODY, node);
+    free_linkedlist(entry->task_queue);
+    // 
     free(entry);
+}
+
+static int find_thread_do(TASK_ENTRY* entry, TASK_BODY* body, TASK_TYPE type) {
+    // 获取空闲线程
+    int ret = 0;
+    int i = 1;
+    THREAD_ENTRY *ppthread = NULL;
+    if (NULL==entry || NULL==body) {
+        ret = -TASK_CORE_CHECK_PARAM;
+        goto err_exit;
+    }
+
+    // 加锁
+    if (0!=pthread_mutex_trylock(&entry->lock_threads)) {
+        printf("加锁失败,等待...\n");
+        usleep(10000);
+        if (0 != pthread_mutex_trylock(&entry->lock_threads)) {
+            ret = -TASK_CORE_MUTEX_LOCK;
+            goto err_exit;
+        }
+    }
+
+    for (;i<entry->thread_count;i++) {
+        ppthread = entry->threads+i;
+        if ((ppthread->status)&PTHREAD_STA_PICK)
+            continue;
+        if ((ppthread->status)&PTHREAD_STA_RUN && !((ppthread->status)&PTHREAD_STA_BUSY)) {
+            break;
+        }
+    }
+
+    if (i>=entry->thread_count) {
+        //printf("没有空闲线程\n");
+        ret = -TASK_CORE_THREAD_BUSY;
+        goto unlock_exit;
+    }
+
+    ppthread->status |= PTHREAD_STA_PICK;
+    //printf("获取执行任务线程 %d\n", ppthread->NO);
+    // 指定任务
+    ppthread->body = body;
+    // 解锁
+    pthread_mutex_unlock(&entry->lock_threads);
+    // 唤醒
+    sem_post(&(ppthread->wait_task));
+
+    return 0;
+
+unlock_exit:
+    // 解锁
+    pthread_mutex_unlock(&entry->lock_threads);
+err_exit:
+    free(body);
+    return ret;
+}
+
+int commit_task(TASK_ENTRY* entry, COMMIT_TASK_CBK task, TASK_TYPE type) {
+    if (NULL==entry || NULL==task)
+        return -TASK_CORE_CHECK_PARAM;
+
+    TASK_BODY *body = (TASK_BODY *)calloc(1, sizeof(TASK_BODY));
+    if (NULL==body)
+        return -TASK_CORE_MALLOC;
+
+    body->cbk = task;
+
+    switch (type) {
+    case TASK_TYPE_ONECE:
+    case TASK_TYPE_WHILE:
+    case TASK_TYPE_WAIT:
+        find_thread_do(entry, body, type);
+        break;
+    case TASK_TYPE_QUEUE:
+    default:
+        // 加入链表
+        if (insert_tail(entry->task_queue, &(body->node))<0) {
+            // 插入失败
+            free(body);
+            break;
+        }
+        //printf("队列任务数量 %d\n", entry->task_queue->nodecount);
+        // 唤醒线程
+        sem_post(&(entry->threads[0].wait_task));
+        break;
+    }
+
+    return 0;
 }
