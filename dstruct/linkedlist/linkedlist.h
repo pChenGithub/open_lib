@@ -3,9 +3,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+#include <pthread.h>
 #define LKLIST_ERR_CHECKPARAM   1   // 参数错误
 #define LKLIST_ERR_CALLOCFAIL   2   // 执行calloc失败
+#define LKLIST_ERR_INIT_MUTEXLOCK   3   // 初始化锁失败
+#define LKLIST_ERR_LOCK   4   // 加锁锁失败
 
 typedef struct _node{
     struct _node* pre;
@@ -15,6 +17,7 @@ typedef struct _node{
 typedef struct {
     LINK_NODE node;
     int nodecount;      // 链表节点数量,不包括head
+    pthread_mutex_t lock_linked;
 } LINK_HEAD;
 
 // 静态申请一个链表头
@@ -52,19 +55,18 @@ int foreach_lklist(LINK_HEAD* head, hand_node hand);
 // ptr:node指针,type:实体结构体类型,member:node在结构体的域名称
 #define CONTAINER_OF(ptr, type, member) \
 ({ \
-    const typeof(((type*)0)->member) _tmpptr = (ptr); \
     (type*)((char*)ptr-OFFSETOF(type, member)); \
 })
 // 清空链表
 int clear_lklist(LINK_HEAD* head, hand_node hand);
-#define CLEAR_LKLIST(head, type, member) ( \
+#define CLEAR_LKLIST(head, type, member) ({ \
     LINK_NODE* _mnode = NULL; \
-    for (_mnode=head->node.next;_mnode!=(&head->node);_mnode=node->next) { \
-        const (type*) _mdata = CONTAINER_OF(_mnode, type, member); \
+    for (_mnode=(head)->node.next;_mnode!=(&((head)->node));) { \
+        type* _mdata = CONTAINER_OF(_mnode, type, member); \
+        _mnode = _mnode->next; \
         free(_mdata); \
     } \
-    head->nodecount;) \
-
+    (head)->nodecount; })
 
 #ifdef __cplusplus
 }
