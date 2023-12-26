@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 static void recvmsgbd(handMulticastArg* arg) {
     RECV_MSG_BODY *body = (RECV_MSG_BODY *)arg;
@@ -56,8 +57,13 @@ static void recvmsgbd(handMulticastArg* arg) {
 static RECV_MSG_BODY *body = NULL;
 
 int main(int argc, char const *argv[]) {
+    if (argc<3) {
+        printf("输入参数错误, 举例 %s <ip> <port>\n", argv[0]);
+        return -1;
+    }
+
     // 启动组播监听
-    int ret = multicast_listen_start(&body, recvmsgbd, "224.0.1.0", 10000);
+    int ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
     if (ret<0) {
         printf("监听失败, 错误码 %d\n", ret);
     }
