@@ -6,7 +6,11 @@
 #define DEVICE_NAME "/dev/ttyUSB0"
 UART_ENTRY* gentry = NULL;
 
-static void hand_msg() {
+static void hand_msg(unsigned char* buff, int datasize) {
+    for (int i=0;i<datasize;i++) {
+        printf("%02x ", buff[i]);
+    }
+    printf("\n");
 }
 
 static char recv[64] = {0};
@@ -25,9 +29,19 @@ int main(int argc, char const *argv[])
         return -1;
     }
 
-    // 最后一个0是结尾
+#if 1
+printf("发送\n");
     char send[] = {0x7E, 0x80, 0x00, 0x00, 0x00, 0x00, 0x01, 0xAA, 0x00, 0x01, 0xA3, 0x7A, 0x7E};
     send_byte_uart_wait(gentry, send, sizeof(send), recv, sizeof(recv), 1000);
+    #endif
+
+//sleep(5);
+printf("\n\n\n");
+
+printf("发送\n");
+    char send2[] = {0x7E, 0x80, 0x00, 0x01, 0x00, 0x00, 0x80, 0xAA, 0x00, 0x01, 0x01, 0x00, 0xDE, 0x62, 0x7E};
+    send_byte_uart_wait(gentry, send2, sizeof(send2), recv, sizeof(recv), 1000);
+    printf("\n\n\n");
 
     while (1) 
     {

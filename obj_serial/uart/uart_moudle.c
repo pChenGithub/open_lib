@@ -16,12 +16,16 @@ static void* wait_uart(void* arg) {
     UART_ENTRY* pentry = (UART_ENTRY*)arg;
     fd_set rfds;
     struct timeval tv;
+    char* pbuff = NULL;
+    int buffsize = 0;
+    int datasize = 0;
 
-    FD_ZERO(&rfds);
-    FD_SET(pentry->fd, &rfds);
     // 监听串口,分发消息,同步或者异步消息
     while (1) { 
+        FD_ZERO(&rfds);
+        FD_SET(pentry->fd, &rfds);
         // 第一个参数,监听最大描述符值加1
+        printf("等待数据...\n");
         ret = select(pentry->fd+1, &rfds, NULL, NULL, NULL);
         if (ret<0) {
             printf("select 执行失败\n");
@@ -32,17 +36,70 @@ static void* wait_uart(void* arg) {
             continue ;
         }
 
-        ret = read(pentry->fd, pentry->rcvbuff, sizeof(pentry->rcvbuff));
+        //  读取数据
+        memset(pentry->rcvbuff, 0, sizeof(pentry->rcvbuff));
+        pbuff = pentry->rcvbuff;
+        buffsize = sizeof(pentry->rcvbuff);
+        datasize = 0;
+        printf("开始读取数据...\n");
+flag_read_uart:
+        // 这里需要处理串口的数据分段
+        ret = read(pentry->fd, pbuff, buffsize);
         if (ret<0) {
              printf("read 失败\n");
             continue ;
         }
+        //printf("读取数据长度 %d\n", ret);
 
+        pbuff += ret;
+        buffsize -+ ret;
+        datasize += ret;
+
+        // 继续监听
+        // 设置超时时间
+        tv.tv_sec = 0;
+        tv.tv_usec = 10000; // 10ms
+         ret = select(pentry->fd+1, &rfds, NULL, NULL, &tv);
+        if (ret<0) {
+            printf("select 执行失败, 结束\n");
+        } else if (0==ret) {
+            // 超时
+            printf("select 等待超时, 结束读数据\n");
+        } else {
+            // 继续读取数据
+            goto flag_read_uart;
+        }
+
+#if 0
         // 读取成功
-        for (int i=0;i<ret;i++) {
+        for (int i=0;i<datasize;i++) {
             printf("%02x ", pentry->rcvbuff[i]);
         }
         printf("\n");
+#endif
+
+        // 处理数据分发
+        // 如果是同步收发,,这里需要一个规则判断,当前收到的数据是等待的数据
+        if (!pentry->sync_flag) {
+            // 异步数据
+            goto async_work;
+        }
+        // 以下处理同步数据
+        if (NULL==pentry->sync_buff || pentry->sync_buff_len<=0) {
+            pentry->wait_code = -UART_MOUDLE_ERR_CHECKPARAM;
+            goto sync_post;
+        }
+        if (datasize>=pentry->sync_buff_len) {
+            pentry->wait_code = -UART_MOUDLE_ERR_BUFFSIZE;
+        }
+
+sync_post:
+        sem_post(&(pentry->wait_recv));
+        continue ;
+
+async_work:
+        if (NULL!=pentry->hand_msg)
+            pentry->hand_msg(pentry->rcvbuff, datasize);
     }
     return NULL;
 }
@@ -66,7 +123,7 @@ int start_uart(UART_ENTRY** entry, const char* devname, UART_MOUDLE_BAUDRATE_TYP
         goto exit_calloc;
     }
     // 设置成非阻塞
-    fcntl(pentry->fd, F_SETFL, FNDELAY);
+    //fcntl(pentry->fd, F_SETFL, FNDELAY);
 
     ret = set_uart(pentry, speed, stop, event);
     if (ret<0) 
@@ -194,10 +251,14 @@ int send_byte_uart_wait(UART_ENTRY* entry, const char* send, int sendlen, char* 
     if (timeout<=0)
         return -UART_MOUDLE_ERR_TIMEOUT;
 
+    entry->sync_buff = recv;
+    entry->sync_buff_len = recvlen;
+    entry->sync_flag = 1;
+
     ret = write(entry->fd, send, sendlen);
     if (ret<0) {
         printf("写串口失败\n");
-        goto end_exit;
+        goto reset_flag;
     }
 
     // 装载超时时间
@@ -215,14 +276,19 @@ int send_byte_uart_wait(UART_ENTRY* entry, const char* send, int sendlen, char* 
         //printf("waitrecv timeout %ld %d\n", time(NULL), errno);
         printf("waitrecv timeout\n");
         ret = -UART_MOUDLE_ERR_RECVTIMEOUT;
-        goto end_exit;
+        goto reset_flag;
     }
     printf("wait message OK\n");
 
     if (0!=entry->wait_code) {
         ret = entry->wait_code;
-        goto end_exit;
+        //goto reset_flag;
     }
+
+reset_flag:
+    entry->sync_buff = NULL;
+    entry->sync_buff_len = 0;
+    entry->sync_flag = 0;
 
 end_exit:
     printf("unlock exit\n");

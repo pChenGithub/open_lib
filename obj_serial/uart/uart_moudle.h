@@ -11,6 +11,7 @@
 #define UART_MOUDLE_ERR_SETSPEED              7  // 设置串口波特率是吧
 #define UART_MOUDLE_ERR_TIMEOUT              8  // 设置串口波特率是吧
 #define UART_MOUDLE_ERR_RECVTIMEOUT      9 // 等待消息超时
+#define UART_MOUDLE_ERR_BUFFSIZE      10 // 缓存太小
 
 typedef enum {
     BAUDRATE_9600 = 0,
@@ -31,7 +32,7 @@ typedef enum {
 
 #define UM_LOCKTIMEOUT_10MS 50 // 拿锁超时时间(10ms)
 
-typedef void (*hand_uart_msg)(void);
+typedef void (*hand_uart_msg)(unsigned char* buff, int datasize);
 typedef struct {
     int fd;
     // 设置波特率
@@ -43,7 +44,10 @@ typedef struct {
     pthread_t pid;
     char devname[16];
     // 接收串口缓存
-    char rcvbuff[64];
+    // 这里如果不是用的 unsigned 会导致收到数据打印不对
+    // 7e 80 00 01 00 00 80 00 00 01 ca ca 7
+    // 7e ffffff80 00 01 00 00 ffffff80 00 00 01 ffffffca ffffffca 7e
+    unsigned char rcvbuff[64];
     // 每次提交发送消息需要加锁
     pthread_mutex_t lockmsg;
     /*********************************************/
@@ -54,6 +58,9 @@ typedef struct {
     sem_t wait_recv;
     // 同步消息返回的code
     int wait_code;
+    // 同步数据目标缓存和长度
+    unsigned char* sync_buff;
+    int sync_buff_len;
     // 判断同步消息
     char sync_flag;
 } UART_ENTRY;
