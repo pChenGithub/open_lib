@@ -1,5 +1,6 @@
-#param once
+#pragma once
 #include <pthread.h>
+#include <semaphore.h>
 
 #define UART_MOUDLE_ERR_CHECKPARAM   1   // 参数检查失败
 #define UART_MOUDLE_ERR_MALLOC              2   // 内存分配失败
@@ -8,6 +9,8 @@
 #define UART_MOUDLE_ERR_GETATTR              5  // 获取串口属性失败
 #define UART_MOUDLE_ERR_SETATTR              6  // 获取串口属性失败
 #define UART_MOUDLE_ERR_SETSPEED              7  // 设置串口波特率是吧
+#define UART_MOUDLE_ERR_TIMEOUT              8  // 设置串口波特率是吧
+#define UART_MOUDLE_ERR_RECVTIMEOUT      9 // 等待消息超时
 
 typedef enum {
     BAUDRATE_9600 = 0,
@@ -26,6 +29,9 @@ typedef enum {
     EVENT_EVEN,
 } UART_MOUDLE_EVENT_TYPE;
 
+#define UM_LOCKTIMEOUT_10MS 50 // 拿锁超时时间(10ms)
+
+typedef void (*hand_uart_msg)(void);
 typedef struct {
     int fd;
     // 设置波特率
@@ -36,6 +42,20 @@ typedef struct {
     UART_MOUDLE_EVENT_TYPE             event;
     pthread_t pid;
     char devname[16];
+    // 接收串口缓存
+    char rcvbuff[64];
+    // 每次提交发送消息需要加锁
+    pthread_mutex_t lockmsg;
+    /*********************************************/
+    // 异步读取处理参数
+    hand_uart_msg hand_msg;
+    /*********************************************/
+    /* 同步读取控制参数 */
+    sem_t wait_recv;
+    // 同步消息返回的code
+    int wait_code;
+    // 判断同步消息
+    char sync_flag;
 } UART_ENTRY;
 
 int start_uart(UART_ENTRY** entry, const char* devname, UART_MOUDLE_BAUDRATE_TYPE speed, 
@@ -44,8 +64,9 @@ int stop_uart(UART_ENTRY* entry);
 int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed, 
     UART_MOUDLE_STOPBIT_TYPE stop, UART_MOUDLE_EVENT_TYPE event);
 // 设置回调处理异步消息
-int set_uart_ck();
+int set_uart_ck(UART_ENTRY* entry, hand_uart_msg hand);
 // 发送消息,同步等回复
-int send_uart_wait();
+int send_byte_uart_wait(UART_ENTRY* entry, const char* send, int sendlen, char* recv, int recvlen, int waitMs);
+int send_uart_wait(UART_ENTRY* entry, const char* send, char* recv, int recvlen, int waitMs);
 // 发送消息,不等,异步
 int send_uart_one();

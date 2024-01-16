@@ -2,6 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <termios.h>
+#include <sys/select.h>
+#include <string.h>
+#include <sys/time.h>
 
 static void* wait_uart(void* arg) {
     int ret = 0;
@@ -10,17 +18,31 @@ static void* wait_uart(void* arg) {
     struct timeval tv;
 
     FD_ZERO(&rfds);
-    FD_SET(entry->fd, &rfds);
-     // 监听串口,分发消息,同步或者异步消息
-     while (1) { 
+    FD_SET(pentry->fd, &rfds);
+    // 监听串口,分发消息,同步或者异步消息
+    while (1) { 
         // 第一个参数,监听最大描述符值加1
-        ret = select(entry->fd+1, &rfds, NULL, NULL, NULL);
+        ret = select(pentry->fd+1, &rfds, NULL, NULL, NULL);
         if (ret<0) {
-            return -UARTOPTERR_SELECT_ERR;
+            printf("select 执行失败\n");
+            continue ;
         } else if (0==ret) {
             // 超时
-            return -UARTOPTERR_SELECT_TIMEOUT;
+            printf("select 等待超时\n");
+            continue ;
         }
+
+        ret = read(pentry->fd, pentry->rcvbuff, sizeof(pentry->rcvbuff));
+        if (ret<0) {
+             printf("read 失败\n");
+            continue ;
+        }
+
+        // 读取成功
+        for (int i=0;i<ret;i++) {
+            printf("%02x ", pentry->rcvbuff[i]);
+        }
+        printf("\n");
     }
     return NULL;
 }
@@ -46,7 +68,7 @@ int start_uart(UART_ENTRY** entry, const char* devname, UART_MOUDLE_BAUDRATE_TYP
     // 设置成非阻塞
     fcntl(pentry->fd, F_SETFL, FNDELAY);
 
-    ret = set_uart(pentry, speed, stop, even);
+    ret = set_uart(pentry, speed, stop, event);
     if (ret<0) 
         goto exit_open;
 
@@ -56,13 +78,15 @@ int start_uart(UART_ENTRY** entry, const char* devname, UART_MOUDLE_BAUDRATE_TYP
         goto exit_open;
     }
     pthread_detach(pentry->pid);
-    printf("创建成功, 线程号 %d\n", entry->pid);
+    printf("创建成功, 线程号 %ld\n", pentry->pid);
     
     *entry = pentry;
+    pthread_mutex_init(&(pentry->lockmsg), NULL);
+    sem_init(&(pentry->wait_recv), 0, 0);
     return 0;
 
 exit_open:
-    close(pentry->fd)
+    close(pentry->fd);
 exit_calloc:
     free(pentry);
     return ret;
@@ -75,13 +99,15 @@ int stop_uart(UART_ENTRY* entry) {
     if (entry->pid>0) {
         pthread_cancel(entry->pid);
         pthread_join(entry->pid, NULL);
-        printf("回收完成, 线程号 %d\n", entry->pid);
+        printf("回收完成, 线程号 %ld\n", entry->pid);
     }
 
     if (entry->fd>0) {
         close(entry->fd);
     }
 
+    pthread_mutex_destroy(&(entry->lockmsg));
+    sem_destroy(&(entry->wait_recv));
     free(entry);
     return 0;
 }
@@ -90,9 +116,10 @@ int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed,
     UART_MOUDLE_STOPBIT_TYPE stop, UART_MOUDLE_EVENT_TYPE event) {
     int ret = 0;
     struct termios options;
-    if (fd<0)
+    if (NULL==entry)
         return -UART_MOUDLE_ERR_CHECKPARAM;
-    ret = tcgetattr(fd, &options);
+
+    ret = tcgetattr(entry->fd, &options);
     if (0!=ret) {
         return -UART_MOUDLE_ERR_GETATTR;
     }
@@ -105,16 +132,16 @@ int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed,
         break;
     case BAUDRATE_19200:
         ret = cfsetispeed(&options, B19200);
-         ret = ret?ret:cfsetospeed(&options, B19200);
+        ret = ret?ret:cfsetospeed(&options, B19200);
         break;
     case BAUDRATE_115200:
         ret = cfsetispeed(&options, B115200);
-         ret = ret?ret:cfsetospeed(&options, B115200);
+        ret = ret?ret:cfsetospeed(&options, B115200);
         break;
     default:
         break;
     }
-    if (0!==ret)
+    if (0!=ret)
         return -UART_MOUDLE_ERR_SETSPEED;
 
     options.c_cflag &= ~CSIZE; /* Mask the character size bits */
@@ -126,6 +153,8 @@ int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed,
     // 不使用流控制
     options.c_cflag &= ~CRTSCTS;
 
+     // 无校验
+    options.c_cflag &= ~PARENB;
     // 设置停止位
     options.c_cflag &= ~CSTOPB;
 
@@ -138,11 +167,75 @@ int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed,
     options.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
     // 清空终端未完成的数据
-    tcflush(fd, TCIFLUSH);
+    tcflush(entry->fd, TCIFLUSH);
     // 设置新的参数
-    ret = tcsetattr(fd, TCSANOW, &options);
+    ret = tcsetattr(entry->fd, TCSANOW, &options);
     if (0!=ret) {
         return -UART_MOUDLE_ERR_SETATTR;
     }
+    return 0;
+}
+
+int send_byte_uart_wait(UART_ENTRY* entry, const char* send, int sendlen, char* recv, int recvlen, int waitMs) {
+    int ret = 0;
+    if (NULL==entry || NULL==send)
+        return -UART_MOUDLE_ERR_CHECKPARAM;
+
+    if (NULL==recv || recvlen<=0)
+        return -UART_MOUDLE_ERR_CHECKPARAM;
+
+    // 加锁, 设置超时,
+    int timeout = UM_LOCKTIMEOUT_10MS;
+    while (timeout && 0!=pthread_mutex_trylock(&(entry->lockmsg))) {
+        usleep(10000);
+        timeout--;
+    }
+    // 判断是否超时
+    if (timeout<=0)
+        return -UART_MOUDLE_ERR_TIMEOUT;
+
+    ret = write(entry->fd, send, sendlen);
+    if (ret<0) {
+        printf("写串口失败\n");
+        goto end_exit;
+    }
+
+    // 装载超时时间
+    struct timespec waittime;
+    struct  timeval tv;
+    gettimeofday(&tv, NULL);
+    //clock_gettime(CLOCK_REALTIME, &waittime);
+    waittime.tv_sec = tv.tv_sec+(waitMs/1000);
+    waittime.tv_nsec = tv.tv_usec*1000 + (waitMs%1000)*1000;
+    //printf("wait recv msg %ld\n", time(NULL));
+    // 等待
+    if (0!=sem_timedwait(&(entry->wait_recv), &waittime))
+    {
+        // 超时
+        //printf("waitrecv timeout %ld %d\n", time(NULL), errno);
+        printf("waitrecv timeout\n");
+        ret = -UART_MOUDLE_ERR_RECVTIMEOUT;
+        goto end_exit;
+    }
+    printf("wait message OK\n");
+
+    if (0!=entry->wait_code) {
+        ret = entry->wait_code;
+        goto end_exit;
+    }
+
+end_exit:
+    printf("unlock exit\n");
+    // 解锁
+    pthread_mutex_unlock(&(entry->lockmsg));
+    printf("push exit\n");
+    
+    return ret;
+}
+
+int set_uart_ck(UART_ENTRY* entry, hand_uart_msg hand) {
+    if (NULL==entry || NULL==hand)
+        return -UART_MOUDLE_ERR_CHECKPARAM;
+    entry->hand_msg = hand;
     return 0;
 }
