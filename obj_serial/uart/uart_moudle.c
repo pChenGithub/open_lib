@@ -10,7 +10,9 @@
 #include <sys/select.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/prctl.h>
 
+#define UART_MOUDLE_THREAD_NAME "uart_wait_msg"
 static void* wait_uart(void* arg) {
     int ret = 0;
     UART_ENTRY* pentry = (UART_ENTRY*)arg;
@@ -20,6 +22,7 @@ static void* wait_uart(void* arg) {
     int buffsize = 0;
     int datasize = 0;
 
+    prctl(PR_SET_NAME, UART_MOUDLE_THREAD_NAME);
     // 监听串口,分发消息,同步或者异步消息
     while (1) { 
         FD_ZERO(&rfds);
@@ -135,6 +138,7 @@ int start_uart(UART_ENTRY** entry, const char* devname, UART_MOUDLE_BAUDRATE_TYP
         goto exit_open;
     }
     pthread_detach(pentry->pid);
+    //pthread_setname_np(pentry->pid, UART_MOUDLE_THREAD_NAME);
     printf("创建成功, 线程号 %ld\n", pentry->pid);
     
     *entry = pentry;

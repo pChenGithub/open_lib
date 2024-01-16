@@ -43,10 +43,13 @@ printf("发送\n");
     send_byte_uart_wait(gentry, send2, sizeof(send2), recv, sizeof(recv), 1000);
     printf("\n\n\n");
 
+#if 0
     while (1) 
     {
         sleep(100);
     }
+#endif
+
     stop_uart(gentry);
 
     return 0;
