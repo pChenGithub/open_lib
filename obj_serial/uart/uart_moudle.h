@@ -1,4 +1,8 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <pthread.h>
 #include <semaphore.h>
 
@@ -28,6 +32,7 @@ typedef enum {
 typedef enum {
     EVENT_ODD = 0,
     EVENT_EVEN,
+    EVENT_NONE,
 } UART_MOUDLE_EVENT_TYPE;
 
 #define UM_LOCKTIMEOUT_10MS 50 // 拿锁超时时间(10ms)
@@ -35,14 +40,16 @@ typedef enum {
 typedef void (*hand_uart_msg)(unsigned char* buff, int datasize);
 typedef struct {
     int fd;
+#if 0
     // 设置波特率
     UART_MOUDLE_BAUDRATE_TYPE   baudrate;
     // 设置停止位
     UART_MOUDLE_STOPBIT_TYPE        stopbit;
     // 设置校验格式
     UART_MOUDLE_EVENT_TYPE             event;
+#endif
     pthread_t pid;
-    char devname[16];
+    //char devname[16];
     // 接收串口缓存
     // 这里如果不是用的 unsigned 会导致收到数据打印不对
     // 7e 80 00 01 00 00 80 00 00 01 ca ca 7
@@ -73,7 +80,11 @@ int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed,
 // 设置回调处理异步消息
 int set_uart_ck(UART_ENTRY* entry, hand_uart_msg hand);
 // 发送消息,同步等回复
-int send_byte_uart_wait(UART_ENTRY* entry, const char* send, int sendlen, char* recv, int recvlen, int waitMs);
+int send_byte_uart_wait(UART_ENTRY* entry, const unsigned char *send, int sendlen, unsigned char *recv, int recvlen, int waitMs);
 int send_uart_wait(UART_ENTRY* entry, const char* send, char* recv, int recvlen, int waitMs);
 // 发送消息,不等,异步
 int send_uart_one();
+
+#ifdef __cplusplus
+}
+#endif

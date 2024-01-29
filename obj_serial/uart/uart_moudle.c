@@ -18,7 +18,7 @@ static void* wait_uart(void* arg) {
     UART_ENTRY* pentry = (UART_ENTRY*)arg;
     fd_set rfds;
     struct timeval tv;
-    char* pbuff = NULL;
+    unsigned char* pbuff = NULL;
     int buffsize = 0;
     int datasize = 0;
 
@@ -55,7 +55,7 @@ flag_read_uart:
         //printf("读取数据长度 %d\n", ret);
 
         pbuff += ret;
-        buffsize -+ ret;
+        buffsize -= ret;
         datasize += ret;
 
         // 继续监听
@@ -94,7 +94,13 @@ flag_read_uart:
         }
         if (datasize>=pentry->sync_buff_len) {
             pentry->wait_code = -UART_MOUDLE_ERR_BUFFSIZE;
+            goto sync_post;
         }
+
+        // 复制内存
+        memcpy(pentry->sync_buff, pentry->rcvbuff, datasize);
+        pentry->sync_buff[datasize] = 0;
+        pentry->wait_code = 0;
 
 sync_post:
         sem_post(&(pentry->wait_recv));
@@ -154,7 +160,7 @@ exit_calloc:
 }
 
 int stop_uart(UART_ENTRY* entry) {
-    int ret = 0;
+    //int ret = 0;
     if (NULL==entry)
         return -UART_MOUDLE_ERR_CHECKPARAM;
     if (entry->pid>0) {
@@ -175,6 +181,8 @@ int stop_uart(UART_ENTRY* entry) {
 
 int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed, 
     UART_MOUDLE_STOPBIT_TYPE stop, UART_MOUDLE_EVENT_TYPE event) {
+    (void)stop;
+    (void)event;
     int ret = 0;
     struct termios options;
     if (NULL==entry)
@@ -237,7 +245,7 @@ int set_uart(UART_ENTRY* entry, UART_MOUDLE_BAUDRATE_TYPE speed,
     return 0;
 }
 
-int send_byte_uart_wait(UART_ENTRY* entry, const char* send, int sendlen, char* recv, int recvlen, int waitMs) {
+int send_byte_uart_wait(UART_ENTRY* entry, const unsigned char* send, int sendlen, unsigned char* recv, int recvlen, int waitMs) {
     int ret = 0;
     if (NULL==entry || NULL==send)
         return -UART_MOUDLE_ERR_CHECKPARAM;
@@ -294,7 +302,7 @@ reset_flag:
     entry->sync_buff_len = 0;
     entry->sync_flag = 0;
 
-end_exit:
+//end_exit:
     printf("unlock exit\n");
     // 解锁
     pthread_mutex_unlock(&(entry->lockmsg));
