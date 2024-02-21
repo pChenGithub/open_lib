@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include "uart_moudle.h"
 
-#define DEVICE_NAME "/dev/ttyUSB0"
+#define DEVICE_NAME "/dev/ttySLB2"
 UART_ENTRY* gentry = NULL;
 
 static void hand_msg(unsigned char* buff, int datasize) {
@@ -43,7 +43,7 @@ printf("发送\n");
     send_byte_uart_wait(gentry, send2, sizeof(send2), recv, sizeof(recv), 1000);
     printf("\n\n\n");
 
-#if 0
+#if 1
     while (1) 
     {
         sleep(100);

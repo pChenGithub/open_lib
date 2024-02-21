@@ -65,7 +65,12 @@ int main(int argc, char const *argv[]) {
     // 启动组播监听
     int ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
     if (ret<0) {
-        printf("监听失败, 错误码 %d\n", ret);
+        printf("监听失败, 错误码 %d, 再一次\n", ret);
+		sleep(10);
+		ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
+		if (ret<0) {
+			printf("监听失败, 错误码 %d\n", ret);
+		}
     }
 
     // 启动http监听,一些点对点的服务
