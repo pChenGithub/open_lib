@@ -11,6 +11,16 @@
 #define TCPIPERR_RECVMSG 8     // 接收消息失败
 #define TCPIPERR_WAITRECV_TIMEOUT  9     // 等待数据超时
 #define TCPIPERR_SELECT  10     // select失败
+#define TCPIPERR_OPENFILE   11  // 打开文件失败
+#define TCPIPERR_FSTAT   12  // 获取文件状态
+#define TCPIPERR_SEND_DATA   13  // 发送数据失败
+#define TCPIPERR_RECV_DATA   14  // 接收数据失败
+#define TCPIPERR_RSP   15  // 回复数据异常
+#define TCPIPERR_RSP_INDEX   16  // 回复数据序号异常
+
+#define TCPIPERR_RSP_CODE   17  // 回复数据返回值异常
+
+#define TCPIPERR_READ_FILE   18  // 读取文件失败
 
 
 #endif
