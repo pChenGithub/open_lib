@@ -16,7 +16,7 @@ all: ${pro_scan_recv} ${pro_scan_send}
 #	$(DEBUGGER) ./${pro_multicast_recv} ${ARGS}
 
 #
-TCPIP_SOURCE += ../socket_obj/tcpIp/multicast.c protocol/prot_json.c ../json_parse/jsonlibC/cJSON.c ../socket_obj/link/net_opt.c ../socket_obj/link/net_netlink.c ../misc/mac_opt.c ../obj_cstring/string_opt.c
+TCPIP_SOURCE += ../socket_obj/tcpIp/multicast.c protocol/device_prot.c ../json_parse/jsonlibC/cJSON.c ../socket_obj/link/net_opt.c ../socket_obj/link/net_netlink.c ../misc/mac_opt.c ../obj_cstring/string_opt.c
 ${pro_scan_recv} :  ${TCPIP_SOURCE} ${LINK_LIBS}
 
 ${pro_scan_send} :  ${TCPIP_SOURCE} ${LINK_LIBS}

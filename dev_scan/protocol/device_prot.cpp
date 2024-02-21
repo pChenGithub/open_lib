@@ -1,4 +1,6 @@
 #include "device_prot.h"
+#include "link/net_opt.h"
+#include "mac_opt.h"
 #include <string.h>
 
 int paser_device_info(const char* rsp, DEVICE_INFO* deviceinfo) {
@@ -31,5 +33,19 @@ int paser_device_info(const char* rsp, DEVICE_INFO* deviceinfo) {
         memcpy(deviceinfo->ip, ip, strlen(ip));
     if (nullptr!=sn)
         memcpy(deviceinfo->sn, sn, strlen(sn));
+    return 0;
+}
+
+int fill_device_info(DEVICE_INFO* deviceinfo) {
+    if (NULL==deviceinfo)
+        return -1;
+    // eth ip
+    get_ip("eth0", deviceinfo->ip, sizeof(deviceinfo->ip));
+    // mac
+    int ret = mac_to_snstr(deviceinfo->sn, sizeof(deviceinfo->sn));
+    if (ret<0) {
+        printf("获取mac失败,错误码 %d\n", ret);
+    }
+    printf("获取mac %s\n", deviceinfo->sn);
     return 0;
 }

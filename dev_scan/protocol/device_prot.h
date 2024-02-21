@@ -8,6 +8,7 @@ typedef struct {
     char ip[20];
 } DEVICE_INFO;
 int paser_device_info(const char* rsp, DEVICE_INFO* deviceinfo);
+int fill_device_info(DEVICE_INFO* deviceinfo);
 
 // 命令协议
 #define CMD_DEVICE_SCAN     1   // 扫描
@@ -22,6 +23,8 @@ typedef struct {
     char arg2;
 } DEV_CMD;
 
+#define CMD_RSP_CODE_OK   0   // 命令执行完成
+#define CMD_RSP_CODE_REDY   1   // 命令执行完成,准备下一步
 typedef struct {
     DEV_CMD cmd;
     int code;   // 执行结果

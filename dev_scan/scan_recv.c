@@ -1,57 +1,34 @@
 #include "tcpIp/multicast.h"
-#include "protocol/prot_json.h"
-#include "link/net_opt.h"
-#include "mac_opt.h"
+#include "protocol/device_prot.h"
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
 static void recvmsgbd(handMulticastArg* arg) {
+    int ret = 0;
     RECV_MSG_BODY *body = (RECV_MSG_BODY *)arg;
     // 处理消息
-    printf("<== %s\n", arg->recvBuff);
     // 解析消息,根据消息准备数据回复,
-    int ret = 0;
-    unsigned char cmd = 0;
-    ret = parser_getInfo(arg->recvBuff, &cmd);
-    if (ret<0) {
-        printf("协议错误,错误码 %d\n", ret);
-        return;
-    }
+    DEV_CMD * cmd = (DEV_CMD*)arg->recvBuff;
 
 #if 1
     // 处理广播指令
-    switch (cmd) {
-    case CMD_GET_INFO: {
-        default:
+    switch (cmd->cmd) {
+    case  CMD_DEVICE_UPDATE:
+    break;
+    case CMD_DEVICE_SCAN: 
+    default:
+    {
             // 获取信息,返回
             printf("发送回复信息\n");
-            memset(body->sendBuff, 0, sizeof(body->sendBuff));
-            char *pbuff = body->sendBuff;
-            int bufflen = 0;
-            // memcpy(body->sendBuff, "IP:172.16.70.182 SN:112233665544", strlen("IP:172.16.70.182 SN:112233665544") + 1);
-            memcpy(pbuff, "IP:", 3);
-            bufflen += 3;
-            pbuff += 3;
-            // eth ip
-            get_ip("eth0", pbuff, 128-bufflen);
-            bufflen = strlen(body->sendBuff);
-            pbuff = body->sendBuff + bufflen;
-            // mac
-            strcat(body->sendBuff, " SN:");
-            bufflen += 4;
-            pbuff += 4;
-            ret = mac_to_snstr( pbuff, 128-bufflen);
-            if (ret<0) {
-                printf("获取mac失败,错误码 %d\n", ret);
-            }
-            printf("获取mac %s\n", pbuff);
-            multicast_resp(body, body->sendBuff, strlen(body->sendBuff) + 1);
+            DEVICE_INFO* rsp = (DEVICE_INFO*)body->sendBuff;
+            fill_device_info(rsp);
+            multicast_resp(body, (char*)rsp, sizeof(DEVICE_INFO));
             break;
-        }
     }
-    #endif
+    }
+#endif
 }
 
 static RECV_MSG_BODY *body = NULL;
