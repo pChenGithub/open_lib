@@ -200,7 +200,11 @@ free_exit:
 
 int ip_send_file(const char *ip, int port, const char *file)
 {
+#if __WIN32
     SOCKET socketfd = 0;
+#else
+    int socketfd = 0;
+#endif
     int ret = 0;
     struct sockaddr_in ServerAddr;
 
@@ -219,9 +223,13 @@ int ip_send_file(const char *ip, int port, const char *file)
 
     // 打开socket
     socketfd = socket(AF_INET, SOCK_STREAM, 0);
+#if __WIN32
     if (INVALID_SOCKET==socketfd) {
+    WSACleanup();
+#else
+    if (socketfd<0) {
+#endif
         printf("socket create error, errno %d\n", errno);
-        WSACleanup();
         return -TCPIPERR_SOCKET_CREATE;
     }
 
@@ -233,8 +241,12 @@ int ip_send_file(const char *ip, int port, const char *file)
     ServerAddr.sin_addr.s_addr = inet_addr(ip);
 
     // 绑定socket和服务ip端口
-    ret = connect(socketfd, (SOCKADDR*)& ServerAddr, sizeof(struct sockaddr));
+    ret = connect(socketfd, (struct sockaddr*)& ServerAddr, sizeof(struct sockaddr));
+#if __WIN32
     if (ret == SOCKET_ERROR) {
+#else
+    if (-1==ret) {
+#endif
         printf("connect error\n");
         ret = -TCPIPERR_CONNECT;
         goto error_set;
@@ -244,8 +256,12 @@ int ip_send_file(const char *ip, int port, const char *file)
     if (ret<0)
         printf("send file error, %d\n", ret);
 error_set:
+#if __WIN32
     closesocket(socketfd);
     WSACleanup();
+#else
+    close(socketfd);
+#endif
     return ret;
 }
 

@@ -357,11 +357,11 @@ int udp_sendmsg_wait(char* buff, int len, char* ip, int port, handMulticastRsp c
     socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 #if __WIN32
     if (INVALID_SOCKET==socketfd) {
+    WSACleanup();
 #else
     if (socketfd<0) {
 #endif
         printf("创建套接字失败, errno %d\n", errno);
-        WSACleanup();
         return -TCPIPERR_SOCKET_CREATE;
     }
     // 设置为非阻塞

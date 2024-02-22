@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static void handRsp(char* rsp, int len) {
+static int handRsp(char* rsp, int len) {
     printf("接收到消息 %s, 长度 %d\n", rsp, len);
 }
 
