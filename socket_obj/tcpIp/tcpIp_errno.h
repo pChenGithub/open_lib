@@ -24,7 +24,9 @@
 #define TCPIPERR_WRITE_FILE   19  // 读取文件失败
 
 #define TCPIPERR_SOCKET_LISTEN   20  // 监听socket失败
+#define TCPIPERR_CONNECT 21     // socket连接失败
 
+#define TCPIPERR_CALLBACK 12     // 回调函数返回异常
 
 #endif
 

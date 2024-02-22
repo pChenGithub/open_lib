@@ -31,7 +31,11 @@ typedef struct {
     unsigned char buff[FRAME_BUFF_SIZE];
 } FILE_FRAME;
 
+#if __WIN32
+int sock_send_file(SOCKET socketfd, const char* file) {
+#else
 int sock_send_file(int socketfd, const char* file) {
+#endif
     int ret = 0;
     if (NULL==file)
         return -TCPIPERR_CHECK_PARAM;
@@ -61,6 +65,7 @@ int sock_send_file(int socketfd, const char* file) {
     while((ret=read(fd, fframe->buff, FRAME_BUFF_SIZE))>0) {
         if (FRAME_BUFF_SIZE!=ret)
             sendsize = fframe->buff-(unsigned char*)fframe + ret;
+        printf("send file data, size %d\n", sendsize);
         ret = send(socketfd, (const char*)fframe, sendsize, 0);
         if (ret<0) {
             ret = -TCPIPERR_SEND_DATA;
@@ -75,6 +80,8 @@ int sock_send_file(int socketfd, const char* file) {
             ret = -TCPIPERR_RECV_DATA;
             goto free_exit;
         }
+
+        printf("rsp file send %d %d %d\n", rsp.framecount, rsp.filesize, rsp.code);
 #endif
 
         // 校验回复
@@ -111,7 +118,11 @@ close_exit:
     return ret;
 }
 
+#if __WIN32
+int sock_recv_file(SOCKET socketfd, const char* file) {
+#else
 int sock_recv_file(int socketfd, const char* file) {
+#endif
     int ret = 0;
     int datasize = 0;
     if (NULL==file)
@@ -187,12 +198,72 @@ free_exit:
     return ret;
 }
 
+int ip_send_file(const char *ip, int port, const char *file)
+{
+    SOCKET socketfd = 0;
+    int ret = 0;
+    struct sockaddr_in ServerAddr;
+
+    if (NULL==ip || NULL==file)
+        return -TCPIPERR_CHECK_PARAM;
+
+#if __WIN32
+    WORD sockVersion=MAKEWORD(2,2);
+    WSADATA wsaData;//WSADATA结构体变量的地址值
+    if(WSAStartup(sockVersion, &wsaData)!=0)
+    {
+        printf("WSAStartup() error!");
+        return 0;
+    }
+#endif
+
+    // 打开socket
+    socketfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (INVALID_SOCKET==socketfd) {
+        printf("socket create error, errno %d\n", errno);
+        WSACleanup();
+        return -TCPIPERR_SOCKET_CREATE;
+    }
+
+    // 连接服务端
+    /* 配置服务器IP、端口信息 */
+    memset(&ServerAddr, 0, sizeof(struct sockaddr));	//每一个字节都用0来填充
+    ServerAddr.sin_family = AF_INET;
+    ServerAddr.sin_port = htons(port);
+    ServerAddr.sin_addr.s_addr = inet_addr(ip);
+
+    // 绑定socket和服务ip端口
+    ret = connect(socketfd, (SOCKADDR*)& ServerAddr, sizeof(struct sockaddr));
+    if (ret == SOCKET_ERROR) {
+        printf("connect error\n");
+        ret = -TCPIPERR_CONNECT;
+        goto error_set;
+    }
+
+    ret = sock_send_file(socketfd, file);
+    if (ret<0)
+        printf("send file error, %d\n", ret);
+error_set:
+    closesocket(socketfd);
+    WSACleanup();
+    return ret;
+}
+
+int ip_recv_file(const char *ip, int port, const char *file)
+{
+
+}
+
 // 等待tcp连接线程
 static void *waitTcpMsg(void* arg) {
     // 创建线程,等待组播消息
     printf("接收线程开始\n");
     int ret = 0;
+#if __WIN32
+    SOCKET msgfd = 0;
+#else
     int msgfd = 0;
+#endif
     RECV_TCP_MSG_BODY *body = (RECV_TCP_MSG_BODY *)arg;
     handTcpArg* callArg = &(body->callbackArg);
     // 设置线程名字
@@ -218,7 +289,11 @@ static void *waitTcpMsg(void* arg) {
 }
 
 int tcp_listen_start(RECV_TCP_MSG_BODY** entry, handTcpMsg callback, char* serverip, int port) {
+#if __WIN32
+    SOCKET socketfd = 0;
+#else
     int socketfd = 0;
+#endif
     int ret = 0;
     if (NULL==entry || NULL==serverip)
         return -TCPIPERR_CHECK_PARAM;
@@ -230,7 +305,11 @@ int tcp_listen_start(RECV_TCP_MSG_BODY** entry, handTcpMsg callback, char* serve
 
     // 创建套接字
     socketfd = socket(AF_INET, SOCK_STREAM, 0);
+#if __WIN32
+    if (INVALID_SOCKET==socketfd) {
+#else
     if (-1==socketfd) {
+#endif
         printf("创建套接字失败, errno %d\n", errno);
         ret = -TCPIPERR_SOCKET_CREATE;
         goto error_malloc;
@@ -274,7 +353,11 @@ int tcp_listen_start(RECV_TCP_MSG_BODY** entry, handTcpMsg callback, char* serve
     return 0;
 
 error_bind:
+#if __WIN32
+    closesocket(socketfd);
+#else
     close(socketfd);
+#endif
 error_malloc:
     free(body);
     body = NULL;
@@ -290,8 +373,13 @@ int tcp_listen_del(RECV_TCP_MSG_BODY* entry) {
     // 等待线程退出
     pthread_join(entry->pid, NULL);
     // 关闭fd
+#if __WIN32
+    closesocket(entry->callbackArg.socketfd);
+#else
     close(entry->callbackArg.socketfd);
+#endif
     // 销毁内存
     free(entry);
     return 0;
 }
+

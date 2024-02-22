@@ -1,11 +1,14 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include "tcpIp_errno.h"
+#include <pthread.h>
 #if __WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
 #else
-#include <pthread.h>
 #include <netinet/in.h>
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
@@ -14,8 +17,17 @@
 #endif
 
 // 发送和接收文件
+#if __WIN32
+int sock_send_file(SOCKET socketfd, const char* file);
+int sock_recv_file(SOCKET socketfd, const char* file);
+#else
 int sock_send_file(int socketfd, const char* file);
 int sock_recv_file(int socketfd, const char* file);
+#endif
+// tcp打开socket，绑定地址和端口
+int ip_send_file(const char* ip, int port, const char* file);
+int ip_recv_file(const char* ip, int port, const char* file);
+
 // 发送和接收
 
 //********************************************************************************
@@ -23,7 +35,11 @@ int sock_recv_file(int socketfd, const char* file);
 // 回调参数声明
 typedef struct {
     // 接受消息的套接字
+#if __WIN32
+    SOCKET socketfd;
+#else
     int socketfd;
+#endif
     // 消息源地址
     struct sockaddr_in srcaddr;
     socklen_t  len;
@@ -47,4 +63,9 @@ typedef struct {
 int tcp_listen_start(RECV_TCP_MSG_BODY** entry, handTcpMsg callback, char* serverip, int port);
 // 销毁tcp监听
 int tcp_listen_del(RECV_TCP_MSG_BODY* entry);
+
+#ifdef __cplusplus
+}
+#endif
+
 

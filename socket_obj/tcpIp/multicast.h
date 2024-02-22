@@ -1,15 +1,29 @@
-#ifndef  __MULTICAST_H__
-#define __MULTICAST_H__
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 #include <pthread.h>
-#include <netinet/in.h>
 #include <sys/types.h>          /* See NOTES */
+#if __WIN32
+#define _WIN32_WINNT 0x0600
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#else
 #include <sys/socket.h>
 #include <net/if.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#endif
+
 // 回调参数声明
 typedef struct {
     // 接受消息的套接字
+#if __WIN32
+    SOCKET socketfd;
+#else
     int socketfd;
+#endif
     // 消息源地址
     struct sockaddr_in srcaddr;
     socklen_t  len;
@@ -62,10 +76,14 @@ int multicast_resp(RECV_MSG_BODY* entry, char* buff, int len);
 // 发送组播消息(字符串len长度包括\0, 数组指定长度)
 int multicast_sendmsg(char* buff, int len, char* groupIp, int port);
 // 广播处理回复消息回调
-typedef void(*handMulticastRsp)(char* rspstr, int len);
+typedef int(*handMulticastRsp)(char* rspstr, int len);
 // 发送组播消息,并超时等到回复
 // ms指定为0表示不等带回复
 int multicast_sendmsg_wait(char *buff, int len, char *groupIp, int port, handMulticastRsp callbk, unsigned int ms);
+// ***********************************************************************************
+// udp 点对点发送接口
+int udp_sendmsg_wait(char* buff, int len, char* ip, int port, handMulticastRsp callbk, unsigned int ms);
+#ifdef __cplusplus
+}
 #endif
-
 

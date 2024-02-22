@@ -47,7 +47,11 @@ static void *waitMunlticaseMsg(void* arg) {
 
 int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, char* groupIp, int port) {
     int ret = 0;
+#if __WIN32
+    SOCKET socketfd = 0;
+#else
     int socketfd = 0;
+#endif
     //pthread_t pid;
 
     if (NULL==entry || NULL==groupIp)
@@ -61,9 +65,23 @@ int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, cha
         return -TCPIPERR_MALLOCA;
     }
 
+#if __WIN32
+    WORD sockVersion=MAKEWORD(2,2);
+    WSADATA wsaData;//WSADATA结构体变量的地址值
+    if(WSAStartup(sockVersion, &wsaData)!=0)
+    {
+        printf("WSAStartup() error!");
+        return 0;
+    }
+#endif
+
     // 创建套接字
     socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+#if __WIN32
+    if (INVALID_SOCKET==socketfd) {
+#else
     if (-1==socketfd) {
+#endif
         printf("创建套接字失败, errno %d\n", errno);
         ret = -TCPIPERR_SOCKET_CREATE;
         goto error_malloc;
@@ -76,7 +94,11 @@ int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, cha
     addr.sin_port = htons(port);    // 大端
     addr.sin_addr.s_addr = htonl(INADDR_ANY);  // 0.0.0.0
     ret = bind(socketfd, (struct sockaddr*)&addr, sizeof(addr));
+#if __WIN32
+    if (SOCKET_ERROR==ret) {
+#else
     if (-1==ret) {
+#endif
         printf("绑定IP失败, errno %d\n", errno);
         ret = -TCPIPERR_SOCKET_BIND;
         goto error_bind;
@@ -102,12 +124,16 @@ int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, cha
 #else
     // 注意加入这个组 224.0.1.0
     struct ip_mreq mreq; // 多播地址结构体
-    memset(&mreq, 0, sizeof(struct ip_mreq));
+    memset((void*)&mreq, 0, sizeof(struct ip_mreq));
     mreq.imr_multiaddr.s_addr = inet_addr(groupIp);
     mreq.imr_interface.s_addr = htonl(INADDR_ANY);	
     // 加入组
-	ret = setsockopt(socketfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+    ret = setsockopt(socketfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
+#if __WIN32
+    if (SOCKET_ERROR==ret) {
+#else
     if (-1==ret) {
+#endif
         printf("加入组播组失败, errno %d\n", errno);
         ret = -TCPIPERR_SOCKET_SETSCOKOPT;
         goto error_bind;
@@ -130,7 +156,12 @@ int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, cha
     return 0;
 
 error_bind:
+#if __WIN32
+    closesocket(socketfd);
+    WSACleanup();
+#else
     close(socketfd);
+#endif
 error_malloc:
     free(body);
     body = NULL;
@@ -146,7 +177,12 @@ int multicast_listen_del(RECV_MSG_BODY* entry) {
     // 等待线程退出
     pthread_join(entry->pid, NULL);
     // 关闭fd
+#if __WIN32
+    closesocket(entry->callbackArg.socketfd);
+    WSACleanup();
+#else
     close(entry->callbackArg.socketfd);
+#endif
     // 销毁内存
     free(entry);
     return 0;
@@ -174,7 +210,11 @@ int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
 }
 
 int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port,  handMulticastRsp callbk, unsigned int ms) {
+#if __WIN32
+    SOCKET socketfd = 0;
+#else
     int socketfd = 0;
+#endif
     int ret = 0;
     int selret = 0;
 
@@ -182,51 +222,33 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port,  handMu
         return -TCPIPERR_CHECK_PARAM;
     // 检查IP的合法性
 
+#if __WIN32
+    WORD sockVersion=MAKEWORD(2,2);
+    WSADATA wsaData;//WSADATA结构体变量的地址值
+    if(WSAStartup(sockVersion, &wsaData)!=0)
+    {
+        printf("WSAStartup() error!");
+        return 0;
+    }
+#endif
+
     // 创建套接字
-    socketfd = socket(AF_INET, SOCK_DGRAM|SOCK_NONBLOCK, 0);
-    if (-1==socketfd) {
+    //socketfd = socket(AF_INET, SOCK_DGRAM|SOCK_NONBLOCK, 0);
+    socketfd = socket(AF_INET, SOCK_DGRAM, 0);
+#if __WIN32
+    if (INVALID_SOCKET==socketfd) {
+        WSACleanup();
+#else
+    if (socketfd<0) {
+#endif
         printf("创建套接字失败, errno %d\n", errno);
         return -TCPIPERR_SOCKET_CREATE;
     }
     // 设置为非阻塞
 
-#if 0
-    // 设置端口复用（推荐）
-    int optval = 1; // 这里设置为端口复用，所以随便写一个值
-    ret = setsockopt(socketfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-    if (-1==ret) {
-        ret = -TCPIPERR_SOCKET_SETSCOKOPT;
-        goto error_set;
-    }
-#endif
-
-#if 0
-    // 加入组播
-    #if 0
-    struct in_addr opt;
-    // 将组播地址初始化到这个结构体成员中即可
-    inet_pton(AF_INET, groupIp, &opt.s_addr);
-    ret = setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_IF, &opt, sizeof(opt));
-    if (-1==ret) {
-        printf("加入组播组失败, errno %d\n", errno);
-        ret = -TCPIPERR_SOCKET_SETSCOKOPT;
-        goto error_set;
-    }
-    #else
-    struct ip_mreq mreq;
-    // 设置多播地址
-    mreq.imr_multiaddr.s_addr = inet_addr(groupIp);
-    // 设置使用该多播地址发送数据时使用的网卡ip
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);	
-    // 调用setsockopt
-    ret = setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_IF, &mreq, sizeof(mreq));
-    if (-1==ret) {
-        printf("加入组播组失败, errno %d\n", errno);
-        ret = -TCPIPERR_SOCKET_SETSCOKOPT;
-        goto error_set;
-    }
-    #endif
-#endif
+    // 设置同主机还是跨主机
+    //int iFlag = 1;	// 0-同一台主机 1-夸主机
+    //ret = setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_TTL, (char*)&iFlag, sizeof(iFlag));
 
     //  设置发送地址,地址即是组播地址
     struct sockaddr_in cliaddr;
@@ -237,7 +259,7 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port,  handMu
     inet_pton(AF_INET, groupIp, &cliaddr.sin_addr.s_addr);
 
     // 数据广播
-    ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr_in));
+    ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr));
     if (-1==ret) {
         printf("发送组播失败, errno %d\n", errno);
         ret = -TCPIPERR_SENDMSG;
@@ -277,7 +299,7 @@ start_select:
     if (-1==selret) {
         ret = -TCPIPERR_SELECT;
     } else if (0 == selret) {
-        printf("等待数据超时\n");
+        printf("wait data timeout\n");
         //ret = -TCPIPERR_WAITRECV_TIMEOUT;
     } else {
         // >0,有数据
@@ -298,7 +320,115 @@ start_select:
     }
 
 error_set:
+#if __WIN32
+    closesocket(socketfd);
+    WSACleanup();
+#else
     close(socketfd);
+#endif
+    return ret;
+}
+
+int udp_sendmsg_wait(char* buff, int len, char* ip, int port, handMulticastRsp callbk, unsigned int ms) {
+#if __WIN32
+    SOCKET socketfd = 0;
+#else
+    int socketfd = 0;
+#endif
+    int ret = 0;
+    int selret = 0;
+
+    if (NULL==buff || len<=0 || NULL==ip)
+        return -TCPIPERR_CHECK_PARAM;
+    // 检查IP的合法性
+
+#if __WIN32
+    WORD sockVersion=MAKEWORD(2,2);
+    WSADATA wsaData;//WSADATA结构体变量的地址值
+    if(WSAStartup(sockVersion, &wsaData)!=0)
+    {
+        printf("WSAStartup() error!");
+        return 0;
+    }
+#endif
+
+    // 创建套接字
+    //socketfd = socket(AF_INET, SOCK_DGRAM|SOCK_NONBLOCK, 0);
+    socketfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#if __WIN32
+    if (INVALID_SOCKET==socketfd) {
+#else
+    if (socketfd<0) {
+#endif
+        printf("创建套接字失败, errno %d\n", errno);
+        WSACleanup();
+        return -TCPIPERR_SOCKET_CREATE;
+    }
+    // 设置为非阻塞
+
+    //  设置发送地址,地址即是组播地址
+    struct sockaddr_in cliaddr;
+    memset(&cliaddr,0,sizeof(cliaddr));
+    cliaddr.sin_family = AF_INET;
+    cliaddr.sin_port = htons(port); // 接收端需要绑定9999端口
+    // 发送组播消息, 需要使用组播地址, 和设置组播属性使用的组播地址一致就可以
+    inet_pton(AF_INET, ip, &cliaddr.sin_addr.s_addr);
+
+    // 数据广播
+    ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr));
+    if (ret<=0) {
+        printf("sendto error, errno %d\n", errno);
+        ret = -TCPIPERR_SENDMSG;
+    }
+
+    fd_set rfds;
+    struct timeval tv;
+    FD_ZERO(&rfds);
+    FD_SET(socketfd, &rfds);
+    // 设置超时时间
+    tv.tv_sec = 0;
+    tv.tv_usec = 10000;
+
+    // 预计读取数据为超时
+    ret = -TCPIPERR_WAITRECV_TIMEOUT;
+start_select:
+    selret = select(socketfd+1, &rfds, NULL, NULL, &tv);
+    if (-1==selret) {
+        ret = -TCPIPERR_SELECT;
+    } else if (0 == selret) {
+        printf("wait data timeout\n");
+        //ret = -TCPIPERR_WAITRECV_TIMEOUT;
+    } else {
+        // >0,有数据
+        ret = recvfrom(socketfd, buff, len, 0, NULL, NULL);
+        if (-1==ret) {
+            ret = -TCPIPERR_RECVMSG;
+            goto error_set;
+        }
+        // printf("获取消息 %s, ret %d\n", buff, ret);
+
+        if (ret>0 && NULL!=callbk) {
+            ret = callbk(buff, ret);
+        }
+
+        if (ret<0) {
+            ret = -TCPIPERR_CALLBACK;
+            goto error_set;
+        }
+
+        // 标记读取成功,
+        ret = 0;
+        // 重新监听是否有数据返回
+        goto start_select;
+    }
+
+error_set:
+#if __WIN32
+    closesocket(socketfd);
+    WSACleanup();
+#else
+    close(socketfd);
+#endif
     return ret;
 }
 

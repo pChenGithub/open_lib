@@ -1,6 +1,4 @@
 #include "device_prot.h"
-#include "link/net_opt.h"
-#include "mac_opt.h"
 #include <string.h>
 
 int paser_device_info(const char* rsp, DEVICE_INFO* deviceinfo) {
