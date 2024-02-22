@@ -12,7 +12,7 @@ static RECV_TCP_MSG_BODY *tcpbody = NULL;
 // 处理安装包文件
 static int recv_app_pkg(handTcpArg* arg) {
     printf("处理下发的更新包\n");
-    int ret = sock_recv_file(arg->socketfd, "/data/upupupup.tar.gz");
+    int ret = sock_recv_file(arg->msgfd, "/data/upupupup.tar.gz");
     if (ret<0) {
         return -1;
     }

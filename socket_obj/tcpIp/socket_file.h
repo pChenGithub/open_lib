@@ -36,9 +36,9 @@ int ip_recv_file(const char* ip, int port, const char* file);
 typedef struct {
     // 接受消息的套接字
 #if __WIN32
-    SOCKET socketfd;
+    SOCKET msgfd;
 #else
-    int socketfd;
+    int msgfd;
 #endif
     // 消息源地址
     struct sockaddr_in srcaddr;
@@ -52,6 +52,11 @@ typedef int(*handTcpMsg)(handTcpArg* arg);
 typedef struct {
     // 回调函数参数
     handTcpArg callbackArg;
+    #if __WIN32
+    SOCKET socketfd;
+#else
+    int socketfd;
+#endif
     // 回调函数
     handTcpMsg fn;
     // 线程号

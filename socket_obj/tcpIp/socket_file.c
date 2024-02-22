@@ -294,13 +294,13 @@ static void *waitTcpMsg(void* arg) {
     while (1) {
         callArg->len = sizeof(struct sockaddr_in);
         printf("wait client connect\n");
-        msgfd = accept(callArg->socketfd, (struct sockaddr*)&(callArg->srcaddr), &callArg->len);
+        msgfd = accept(body->socketfd, (struct sockaddr*)&(callArg->srcaddr), &callArg->len);
         if (msgfd<0) {
             printf("a connect error\n");
             continue ;
         }
 
-        callArg->socketfd = msgfd;
+        callArg->msgfd = msgfd;
         if (NULL!=body->fn) {
             ret = body->fn(callArg);
             // 释放fn
@@ -360,7 +360,7 @@ int tcp_listen_start(RECV_TCP_MSG_BODY** entry, handTcpMsg callback, char* serve
 	}
 
     // 
-    body->callbackArg.socketfd = socketfd;
+    body->socketfd = socketfd;
     body->fn = callback;
     // 接收端,等待接受数据
     ret = pthread_create(&(body->pid), NULL, waitTcpMsg, body);
@@ -397,9 +397,9 @@ int tcp_listen_del(RECV_TCP_MSG_BODY* entry) {
     pthread_join(entry->pid, NULL);
     // 关闭fd
 #if __WIN32
-    closesocket(entry->callbackArg.socketfd);
+    closesocket(entry->socketfd);
 #else
-    close(entry->callbackArg.socketfd);
+    close(entry->socketfd);
 #endif
     // 销毁内存
     free(entry);
