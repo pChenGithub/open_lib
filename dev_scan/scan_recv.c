@@ -6,6 +6,21 @@
 #include <string.h>
 #include <stdlib.h>
 
+static RECV_MSG_BODY *body = NULL;
+static RECV_TCP_MSG_BODY *tcpbody = NULL;
+
+// 处理安装包文件
+static int recv_app_pkg(handTcpArg* arg) {
+    printf("处理下发的更新包\n");
+    int ret = sock_recv_file(arg->socketfd, "/data/upupupup.tar.gz");
+    if (ret<0) {
+        return -1;
+    }
+
+    // 解压压缩文件
+    printf("解压更新包\n");
+}
+
 static void recvmsgbd(handMulticastArg* arg) {
     int ret = 0;
     RECV_MSG_BODY *body = (RECV_MSG_BODY *)arg;
@@ -21,7 +36,11 @@ static void recvmsgbd(handMulticastArg* arg) {
             DEV_CMD_RSP* rsp = (DEV_CMD_RSP*)body->sendBuff;
             memcpy(&rsp->cmd, cmd, sizeof(DEV_CMD));
             rsp->code = CMD_RSP_CODE_REDY;
-            // 准备号接收文件,
+            // 准备号接收文件,开启tcp服务,端口10002准备接收文件,接收完后解压
+            if (NULL!=tcpbody->fn) {
+                rsp->code = -1;
+            } else 
+                tcpbody->fn = recv_app_pkg;
             // 回复之后,对方就开始发送文件了
             multicast_resp(body, (char*)rsp, sizeof(DEV_CMD_RSP));
     break;
@@ -38,13 +57,6 @@ static void recvmsgbd(handMulticastArg* arg) {
     }
 #endif
 }
-
-static void tcprcvbk(handTcpArg* arg) {
-    printf("收到一包数据\n");
-}
-
-static RECV_MSG_BODY *body = NULL;
-static RECV_TCP_MSG_BODY *tcpbody = NULL;
 
 int main(int argc, char const *argv[]) {
     if (argc<3) {
@@ -63,11 +75,13 @@ int main(int argc, char const *argv[]) {
 		}
     }
 
+#if 1
     // 启动tcp监听
-    ret = tcp_listen_start(&tcpbody, tcprcvbk, (char*)(argv[1]), 10002);
+    ret = tcp_listen_start(&tcpbody, NULL, (char*)(argv[1]), 10002);
     if (ret<0) {
         printf("监听失败, 错误码 %d\n", ret);
     }
+#endif
 
     // 启动http监听,一些点对点的服务
 

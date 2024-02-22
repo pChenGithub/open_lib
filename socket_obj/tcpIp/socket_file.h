@@ -43,11 +43,11 @@ typedef struct {
     // 消息源地址
     struct sockaddr_in srcaddr;
     socklen_t  len;
-    // 接收到的广播消息缓存
-    char recvBuff[128];
+    // 接收到的消息缓存
+    //char recvBuff[128];
 } handTcpArg;
 // 回调
-typedef void(*handTcpMsg)(handTcpArg* arg);
+typedef int(*handTcpMsg)(handTcpArg* arg);
 // tcp监听服务实例
 typedef struct {
     // 回调函数参数

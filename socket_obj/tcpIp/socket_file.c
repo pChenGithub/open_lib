@@ -300,15 +300,14 @@ static void *waitTcpMsg(void* arg) {
             continue ;
         }
 
-        ret = sock_recv_file(msgfd, "/data/upupupup.tar.gz");
-#if 0
-        while((ret = recv(msgfd, callArg->recvBuff, sizeof(callArg->recvBuff), 0))>0) {
-            if (NULL!=body->fn) {
-                body->fn(callArg);
-            }
+        callArg->socketfd = msgfd;
+        if (NULL!=body->fn) {
+            ret = body->fn(callArg);
+            // 释放fn
+            body->fn = NULL;
         }
-#endif
-        printf("recv data over, ret %d errno %d\n", ret, errno);
+        close(msgfd);
+        printf("callback over, ret %d errno %d\n", ret, errno);
     }
 }
 
