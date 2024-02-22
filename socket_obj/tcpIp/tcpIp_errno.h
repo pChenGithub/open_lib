@@ -21,6 +21,9 @@
 #define TCPIPERR_RSP_CODE   17  // 回复数据返回值异常
 
 #define TCPIPERR_READ_FILE   18  // 读取文件失败
+#define TCPIPERR_WRITE_FILE   19  // 读取文件失败
+
+#define TCPIPERR_SOCKET_LISTEN   20  // 监听socket失败
 
 
 #endif
