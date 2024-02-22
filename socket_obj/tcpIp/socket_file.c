@@ -105,6 +105,8 @@ int sock_send_file(int socketfd, const char* file) {
         fframe->index ++;
     }
 
+    // 跳出循环后，如果ret为0，表示文件读取完了，
+    // ret<0 表示读文件异常
     if (ret<0) {
         // 读取文件失败
         ret = -TCPIPERR_READ_FILE;
@@ -143,7 +145,7 @@ int sock_recv_file(int socketfd, const char* file) {
     do {
         ret = recv(socketfd, (char*)fframe, sizeof(FILE_FRAME), 0);
         printf("recv data, size %d\n", ret);
-        if (ret<=0) {
+        if (ret<0) {
             ret = -TCPIPERR_RECV_DATA;
             goto free_exit;
         }
@@ -187,8 +189,14 @@ int sock_recv_file(int socketfd, const char* file) {
             ret = -TCPIPERR_SEND_DATA;
             goto free_exit;
         }
+
         // 期待下一帧
         rsp.index ++;
+        if (rsp.index==fframe->framecount) {
+            // 所有帧发送结束
+            ret = 0;
+            break;
+        }
     } while(1);
 
 free_exit:
