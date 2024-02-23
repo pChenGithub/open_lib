@@ -25,6 +25,7 @@ int sock_send_file(int socketfd, const char* file);
 int sock_recv_file(int socketfd, const char* file);
 #endif
 // tcp打开socket，绑定地址和端口
+// 这两个接口都是客户端
 int ip_send_file(const char* ip, int port, const char* file);
 int ip_recv_file(const char* ip, int port, const char* file);
 

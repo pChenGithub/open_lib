@@ -12,7 +12,7 @@ static void hand_other_task(void* arg) {
 
     //printf("线程 %d 处理其他任务\n", ppthread->NO);
     //printf("ttttttt1  %d\n", ppthread->NO);
-    ppthread->body->cbk();
+    ppthread->body->cbk(ppthread->body->arg);
     //printf("ttttttt2  %d\n", ppthread->NO);
     // 执行任务结束,清理任务
     free(ppthread->body);
@@ -34,7 +34,7 @@ static void hand_queue_task(void* arg) {
     {
         // 获取任务实例,处理任务
         TASK_BODY* body = CONTAINER_OF(node, TASK_BODY, node);
-        body->cbk();
+        body->cbk(body->arg);
         // 销毁
         free(body);
     }
@@ -61,6 +61,7 @@ static void* do_thread(void* arg) {
         ppthread->status &= (~PTHREAD_STA_PICK);
         pthread_mutex_unlock(&entry->lock_threads);
 
+        // 等待开放线程（线程空闲）
         sem_wait(&(ppthread->wait_task));
         ppthread->status |= PTHREAD_STA_BUSY;
 
@@ -101,6 +102,7 @@ int start_task_core(TASK_ENTRY **entry, unsigned int threadn)
     if (NULL==pptask)
         return -TASK_CORE_MALLOC;
 
+    // 初始化 TASK_ENTRY
     // 初始化链表x2
     ret = init_linkedlist(&(pptask->task_queue));
     if (ret<0) {
@@ -138,17 +140,19 @@ int start_task_core(TASK_ENTRY **entry, unsigned int threadn)
         }
     }
     pptask->thread_count = i ;
-    printf("线程数量 %d\n", pptask->thread_count);
+    printf("开启线程数量 %d\n", pptask->thread_count);
 
     // 第一个线程用于检查队列任务,初始化,开放
     ppthread[0].dofunc = hand_queue_task;
 
+    // 初始化线程实例的锁
     ret = pthread_mutex_init(&pptask->lock_threads, NULL);
     if (0!=ret) {
         ret = -TASK_CORE_INIT_MUTEX_LOCK;
         goto err_pthread_c;
     }
 
+    // 返回模块实例
     *entry = pptask;
     return 0;
 
@@ -232,7 +236,8 @@ err_exit:
     return ret;
 }
 
-int commit_task(TASK_ENTRY* entry, COMMIT_TASK_CBK task, TASK_TYPE type) {
+// 回调函数参数需要自己回收
+int commit_task(TASK_ENTRY* entry, COMMIT_TASK_CBK task, void* arg, TASK_TYPE type) {
     if (NULL==entry || NULL==task)
         return -TASK_CORE_CHECK_PARAM;
 
@@ -241,14 +246,17 @@ int commit_task(TASK_ENTRY* entry, COMMIT_TASK_CBK task, TASK_TYPE type) {
         return -TASK_CORE_MALLOC;
 
     body->cbk = task;
+    body->arg = arg;
 
     switch (type) {
     case TASK_TYPE_ONECE:
     case TASK_TYPE_WHILE:
     case TASK_TYPE_WAIT:
+        // 查找空闲线程，绑定任务
         find_thread_do(entry, body, type);
         break;
     case TASK_TYPE_QUEUE:
+        // 默认为队列任务
     default:
         // 加入链表
         if (insert_tail(entry->task_queue, &(body->node))<0) {

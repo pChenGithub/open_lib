@@ -26,7 +26,7 @@
 #define TCPIPERR_SOCKET_LISTEN   20  // 监听socket失败
 #define TCPIPERR_CONNECT 21     // socket连接失败
 
-#define TCPIPERR_CALLBACK 12     // 回调函数返回异常
+#define TCPIPERR_CALLBACK 22     // 回调函数返回异常
 
 #endif
 
