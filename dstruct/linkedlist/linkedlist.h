@@ -45,9 +45,8 @@ int remove_lknode(LINK_HEAD* head, int index, LINK_NODE** node);
 typedef int (*hand_node)(LINK_NODE* node);
 int foreach_lklist(LINK_HEAD* head, hand_node hand);
 // head:链表头指针,node:节点指针
-#define FOREACH_LKLIST(head, type, member) \
-    LINK_NODE* _mnode = NULL; \
-    for (_mnode=head->node.next;_mnode!=(&head->node);_mnode=node->next)
+#define FOREACH_LKLIST(head, _mnode) \
+    for (_mnode=head->node.next;_mnode!=(&head->node);_mnode=_mnode->next)
 // 结构体操作
 // 计算域在结构体中的地址偏移
 #define OFFSETOF(type, member) ((size_t)&((type*)0)->member)
@@ -66,7 +65,10 @@ int clear_lklist(LINK_HEAD* head, hand_node hand);
         _mnode = _mnode->next; \
         free(_mdata); \
     } \
-    (head)->nodecount; })
+    (head)->nodecount = 0; \
+    (head)->node.pre = (LINK_NODE*)head; \
+    (head)->node.next = (LINK_NODE*)head; \
+    })
 
 #ifdef __cplusplus
 }
