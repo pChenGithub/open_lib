@@ -148,7 +148,7 @@ int sock_recv_file(int socketfd, const char* file) {
     // 等待数据，超时？？
     do {
         ret = recv(socketfd, (char*)fframe, sizeof(FILE_FRAME), 0);
-        printf("recv data, size %d\n", ret);
+        //printf("recv data, size %d\n", ret);
         if (ret<0) {
             ret = -TCPIPERR_RECV_DATA;
             goto free_exit;
