@@ -41,12 +41,12 @@ int sock_send_file(int socketfd, const char* file) {
         return -TCPIPERR_CHECK_PARAM;
 
     // 打开文件，统计大小，
-    int fd = open(file, O_RDWR);
-    if (fd<0)
+    FILE* fp = fopen(file, "rb");
+    if (NULL==fp)
         return -TCPIPERR_OPENFILE;
 
     struct stat file_stat;
-    ret = fstat(fd, &file_stat);
+    ret = stat(file, &file_stat);
     if (ret<0) {
         ret = -TCPIPERR_FSTAT;
         goto close_exit;
@@ -62,7 +62,7 @@ int sock_send_file(int socketfd, const char* file) {
 
     int sendsize = sizeof(FILE_FRAME);
     // 准备读取文件，发送
-    while((ret=read(fd, fframe->buff, FRAME_BUFF_SIZE))>0) {
+    while((ret=fread(fframe->buff, FRAME_BUFF_SIZE, 1, fp))>0) {
         if (FRAME_BUFF_SIZE!=ret)
             sendsize = fframe->buff-(unsigned char*)fframe + ret;
         printf("send file data, size %d\n", sendsize);
@@ -81,7 +81,7 @@ int sock_send_file(int socketfd, const char* file) {
             goto free_exit;
         }
 
-        printf("rsp file send %d %d %d\n", rsp.framecount, rsp.filesize, rsp.code);
+        printf("rsp file send framecount %d filesize %d index %d code %d\n", rsp.framecount, rsp.filesize, rsp.index, rsp.code);
 #endif
 
         // 校验回复
@@ -116,7 +116,7 @@ int sock_send_file(int socketfd, const char* file) {
 free_exit:
     free(fframe);
 close_exit:
-    close(fd);
+    fclose(fp);
     return ret;
 }
 
@@ -126,13 +126,13 @@ int sock_recv_file(SOCKET socketfd, const char* file) {
 int sock_recv_file(int socketfd, const char* file) {
 #endif
     int ret = 0;
-    int datasize = 0;
+    unsigned int datasize = 0;
     if (NULL==file)
         return -TCPIPERR_CHECK_PARAM;
 
     // 打开文件
-    int fd = open(file, O_RDWR|O_CREAT, 0666);
-    if (fd<0)
+    FILE* fp = fopen(file, "wb");
+    if (NULL==fp)
         return -TCPIPERR_OPENFILE;
 
     // 准备接收帧
@@ -177,7 +177,7 @@ int sock_recv_file(int socketfd, const char* file) {
         }
 
         // 写文件
-        ret = write(fd, fframe->buff, datasize);
+        ret = fwrite(fframe->buff, datasize, 1, fp);
         if (ret<0) {
             ret = -TCPIPERR_WRITE_FILE;
             goto free_exit;
@@ -202,7 +202,7 @@ int sock_recv_file(int socketfd, const char* file) {
 free_exit:
     free(fframe);
 //close_exit:
-    close(fd);
+    fclose(fp);
     return ret;
 }
 
