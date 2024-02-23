@@ -16,6 +16,9 @@ int fill_device_info(DEVICE_INFO* deviceinfo);
 #define CMD_GET_LOGS        3   // 获取日志
 #define CMD_GET_PKG         4   // 获取安装包
 #define CMD_DO_SHELL        5   // 执行脚本
+#define CMD_DEV_REBOOT      6   // 设备重启
+#define CMD_DEV_INIT      7   // 设备初始化
+#define CMD_DEV_REGAUID      8   // 设备恢复出厂
 typedef struct {
     char cmdgroup;
     char cmd;
