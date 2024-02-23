@@ -61,11 +61,12 @@ int sock_send_file(int socketfd, const char* file) {
         fframe->framecount++;
 
     int sendsize = sizeof(FILE_FRAME);
+    int readsize = FRAME_BUFF_SIZE;
     // 准备读取文件，发送
-    while((ret=fread(fframe->buff, FRAME_BUFF_SIZE, 1, fp))>0) {
-        if (FRAME_BUFF_SIZE!=ret)
-            sendsize = fframe->buff-(unsigned char*)fframe + ret;
-        printf("send file data, size %d\n", sendsize);
+    while((ret=fread(fframe->buff, readsize, 1, fp))>0) {
+        if ((fframe->index+1)==fframe->framecount)
+            sendsize = fframe->laseframesize+(fframe->buff-(unsigned char*)fframe);
+        //printf("send file data, size %d ret %d\n", sendsize, ret);
         ret = send(socketfd, (const char*)fframe, sendsize, 0);
         if (ret<0) {
             ret = -TCPIPERR_SEND_DATA;
@@ -81,7 +82,7 @@ int sock_send_file(int socketfd, const char* file) {
             goto free_exit;
         }
 
-        printf("rsp file send framecount %d filesize %d index %d code %d\n", rsp.framecount, rsp.filesize, rsp.index, rsp.code);
+        //printf("rsp file send framecount %d filesize %d index %d code %d\n", rsp.framecount, rsp.filesize, rsp.index, rsp.code);
 #endif
 
         // 校验回复
@@ -103,10 +104,13 @@ int sock_send_file(int socketfd, const char* file) {
 
         // 发送的index从0开始
         fframe->index ++;
+        if ((fframe->index+1)==fframe->framecount)
+            readsize = fframe->laseframesize;
     }
 
     // 跳出循环后，如果ret为0，表示文件读取完了，
     // ret<0 表示读文件异常
+    printf("over read file ret %d\n", ret);
     if (ret<0) {
         // 读取文件失败
         ret = -TCPIPERR_READ_FILE;
