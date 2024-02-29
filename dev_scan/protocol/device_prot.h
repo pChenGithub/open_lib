@@ -40,6 +40,7 @@ typedef struct {
     DEV_CMD_BASE base;
     DEVICE_BASE_INFO devbinfo;
     // 从这里扩展命令,大小控制一下
+    //char buff[128];
 } DEV_CMD;
 
 #define CMD_RSP_CODE_OK   0   // 命令执行完成

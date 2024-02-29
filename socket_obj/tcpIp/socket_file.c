@@ -60,13 +60,18 @@ int sock_send_file(int socketfd, const char* file) {
     if (fframe->laseframesize)
         fframe->framecount++;
 
+    printf("size %d, lastsize %d, count %d\n", fframe->filesize, fframe->laseframesize, fframe->framecount);
     int sendsize = sizeof(FILE_FRAME);
     int readsize = FRAME_BUFF_SIZE;
+    if (1==fframe->framecount)
+        readsize = fframe->laseframesize;
     // 准备读取文件，发送
+    printf("readsize %d\n", readsize);
     while((ret=fread(fframe->buff, readsize, 1, fp))>0) {
         if ((fframe->index+1)==fframe->framecount)
             sendsize = fframe->laseframesize+(fframe->buff-(unsigned char*)fframe);
         //printf("send file data, size %d ret %d\n", sendsize, ret);
+        //printf("framecount %d\n", fframe->framecount);
         ret = send(socketfd, (const char*)fframe, sendsize, 0);
         if (ret<0) {
             ret = -TCPIPERR_SEND_DATA;
