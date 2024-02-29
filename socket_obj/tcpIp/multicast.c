@@ -205,11 +205,12 @@ int multicast_resp(RECV_MSG_BODY* entry, char* buff, int len) {
     return 0;
 }
 
-int multicast_sendmsg(char* buff, int len, char* groupIp, int port) {
-    return multicast_sendmsg_wait(buff, len, groupIp, port, NULL, 0);
+int multicast_sendmsg(char* buff, int bufflen, int sendsize, char* groupIp, int port) {
+    return multicast_sendmsg_wait(buff, bufflen, sendsize, groupIp, port, NULL, 0);
 }
 
-int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port,  handMulticastRsp callbk, unsigned int ms) {
+int multicast_sendmsg_wait(char* buff, int bufflen, int sendsize,
+                           char* groupIp, int port,  handMulticastRsp callbk, unsigned int ms) {
 #if __WIN32
     SOCKET socketfd = 0;
 #else
@@ -218,7 +219,7 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port,  handMu
     int ret = 0;
     int selret = 0;
 
-    if (NULL==buff || len<=0 || NULL==groupIp)
+    if (NULL==buff || bufflen<=0 || NULL==groupIp)
         return -TCPIPERR_CHECK_PARAM;
     // 检查IP的合法性
 
@@ -259,7 +260,7 @@ int multicast_sendmsg_wait(char* buff, int len, char* groupIp, int port,  handMu
     inet_pton(AF_INET, groupIp, &cliaddr.sin_addr.s_addr);
 
     // 数据广播
-    ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr));
+    ret = sendto(socketfd, buff, sendsize, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr));
     if (-1==ret) {
         printf("发送组播失败, errno %d\n", errno);
         ret = -TCPIPERR_SENDMSG;
@@ -303,7 +304,7 @@ start_select:
         //ret = -TCPIPERR_WAITRECV_TIMEOUT;
     } else {
         // >0,有数据
-        ret = recvfrom(socketfd, buff, len, 0, NULL, NULL);
+        ret = recvfrom(socketfd, buff, bufflen, 0, NULL, NULL);
         if (-1==ret) {
             ret = -TCPIPERR_RECVMSG;
             goto error_set;
@@ -329,7 +330,8 @@ error_set:
     return ret;
 }
 
-int udp_sendmsg_wait(char* buff, int len, char* ip, int port, handMulticastRsp callbk, unsigned int ms) {
+int udp_sendmsg_wait(char* buff, int bufflen, int sendsize,
+                     char* ip, int port, handMulticastRsp callbk, unsigned int ms) {
 #if __WIN32
     SOCKET socketfd = 0;
 #else
@@ -338,7 +340,7 @@ int udp_sendmsg_wait(char* buff, int len, char* ip, int port, handMulticastRsp c
     int ret = 0;
     int selret = 0;
 
-    if (NULL==buff || len<=0 || NULL==ip)
+    if (NULL==buff || bufflen<=0 || NULL==ip)
         return -TCPIPERR_CHECK_PARAM;
     // 检查IP的合法性
 
@@ -375,7 +377,7 @@ int udp_sendmsg_wait(char* buff, int len, char* ip, int port, handMulticastRsp c
     inet_pton(AF_INET, ip, &cliaddr.sin_addr.s_addr);
 
     // 数据广播
-    ret = sendto(socketfd, buff, len, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr));
+    ret = sendto(socketfd, buff, sendsize, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr));
     if (ret<=0) {
         printf("sendto error, errno %d\n", errno);
         ret = -TCPIPERR_SENDMSG;
@@ -400,7 +402,7 @@ start_select:
         //ret = -TCPIPERR_WAITRECV_TIMEOUT;
     } else {
         // >0,有数据
-        ret = recvfrom(socketfd, buff, len, 0, NULL, NULL);
+        ret = recvfrom(socketfd, buff, bufflen, 0, NULL, NULL);
         if (-1==ret) {
             ret = -TCPIPERR_RECVMSG;
             goto error_set;

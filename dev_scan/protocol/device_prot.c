@@ -48,9 +48,9 @@ int fill_device_info(DEVICE_INFO* deviceinfo) {
     // mac
     int ret = mac_to_snstr(deviceinfo->sn, sizeof(deviceinfo->sn));
     if (ret<0) {
-        printf("获取mac失败,错误码 %d\n", ret);
+        printf("get mac fail,errno %d\n", ret);
     }
-    printf("获取mac %s\n", deviceinfo->sn);
+    printf("get mac %s\n", deviceinfo->sn);
 #endif
     return 0;
 }

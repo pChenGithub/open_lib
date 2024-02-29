@@ -35,6 +35,11 @@ static void hand_queue_task(void* arg) {
         // 获取任务实例,处理任务
         TASK_BODY* body = CONTAINER_OF(node, TASK_BODY, node);
         body->cbk(body->arg);
+        if (NULL!=body->arg) {
+            printf("free arg\n");
+            free(body->arg);
+            body->arg = NULL;
+        }
         // 销毁
         free(body);
     }
@@ -44,7 +49,7 @@ static void* do_thread(void* arg) {
     // 获取线程信息
     THREAD_ENTRY *ppthread = (THREAD_ENTRY*) arg;
     TASK_ENTRY *entry = (TASK_ENTRY *)(ppthread->task_entry);
-    printf("启动线程 %d\n", ppthread->NO);
+    printf("run thread %d\n", ppthread->NO);
 
     // 标记线程运行
     ppthread->status |= PTHREAD_STA_RUN;
@@ -140,7 +145,7 @@ int start_task_core(TASK_ENTRY **entry, unsigned int threadn)
         }
     }
     pptask->thread_count = i ;
-    printf("开启线程数量 %d\n", pptask->thread_count);
+    printf("start thread num %d\n", pptask->thread_count);
 
     // 第一个线程用于检查队列任务,初始化,开放
     ppthread[0].dofunc = hand_queue_task;
@@ -194,7 +199,7 @@ static int find_thread_do(TASK_ENTRY* entry, TASK_BODY* body, TASK_TYPE type) {
 
     // 加锁
     if (0!=pthread_mutex_trylock(&entry->lock_threads)) {
-        printf("加锁失败,等待...\n");
+        printf("lock fail, wait...\n");
         usleep(10000);
         if (0 != pthread_mutex_trylock(&entry->lock_threads)) {
             ret = -TASK_CORE_MUTEX_LOCK;
