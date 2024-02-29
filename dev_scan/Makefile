@@ -17,7 +17,7 @@ all: ${pro_scan_recv} ${pro_scan_send}
 
 #
 TCPIP_SOURCE += ../socket_obj/tcpIp/multicast.c ../socket_obj/tcpIp/socket_file.c protocol/device_prot.c ../json_parse/jsonlibC/cJSON.c \
-	 ../socket_obj/link/net_opt.c ../socket_obj/link/net_netlink.c ../misc/mac_opt.c ../obj_cstring/string_opt.c
+	 ../socket_obj/link/net_opt.c ../socket_obj/link/net_netlink.c ../misc/mac_opt.c ../obj_cstring/string_opt.c ../exeShell_obj/mixShell.c
 ${pro_scan_recv} :  ${TCPIP_SOURCE} ${LINK_LIBS}
 
 ${pro_scan_send} :  ${TCPIP_SOURCE} ${LINK_LIBS}

@@ -172,6 +172,7 @@ int sock_recv_file(int socketfd, const char* file) {
             goto free_exit;
         }
 
+        //printf("except %d, come %d, count %d\n", rsp.index, fframe->index, fframe->framecount);
         if (rsp.index!=fframe->index) {
             rsp.code = FFR_CODE_ERR_INDEX;
             send(socketfd, (const char*)&rsp, sizeof(FILE_FRAME_RSP), 0);
