@@ -25,7 +25,7 @@ int main(int argc, char const *argv[])
 
     // "224.0.1.0"
     // 10000
-    int ret = multicast_sendmsg_wait(sendbuff, strlen(sendbuff)+1, (char*)(argv[1]), atoi(argv[2]), handRsp, 100);
+    int ret = multicast_sendmsg_wait(sendbuff,  sizeof(sendbuff), strlen(sendbuff)+1, (char*)(argv[1]), atoi(argv[2]), handRsp, 100);
     if (ret<0) {
         printf("发送失败, 错误码 %d\n", ret);
     }
