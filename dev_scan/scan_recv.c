@@ -71,6 +71,17 @@ static void recvmsgbd(handMulticastArg* arg) {
         multicast_resp(body, (char*)rsp, sizeof(DEV_CMD_RSP));
     break;
     }
+    case CMD_DEV_REBOOT: {
+        printf("设备重启获取命令\n");
+        DEV_CMD_RSP* rsp = (DEV_CMD_RSP*)body->sendBuff;
+        memcpy(&rsp->cmd, cmd, sizeof(DEV_CMD));
+        rsp->code = CMD_RSP_CODE_OK;
+        // 回复之后,对方就开始请求文件
+        multicast_resp(body, (char*)rsp, sizeof(DEV_CMD_RSP));
+        sleep(2);
+        system("reboot");
+    break;
+    }
     case CMD_DEVICE_SCAN: 
     default:
     {
