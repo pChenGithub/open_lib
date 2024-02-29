@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 
-int paser_device_info(const char* rsp, DEVICE_INFO* deviceinfo) {
+int paser_device_info(const char* rsp, DEVICE_BASE_INFO* deviceinfo) {
     const char* ip = NULL;
     const char* sn = NULL;
     if (NULL==rsp || NULL==deviceinfo)
@@ -31,7 +31,7 @@ int paser_device_info(const char* rsp, DEVICE_INFO* deviceinfo) {
         p++;
     }
 
-    memset(deviceinfo, 0, sizeof(DEVICE_INFO));
+    memset(deviceinfo, 0, sizeof(DEVICE_BASE_INFO));
     if (NULL!=ip)
         memcpy(deviceinfo->ip, ip, strlen(ip));
     if (NULL!=sn)
@@ -39,7 +39,7 @@ int paser_device_info(const char* rsp, DEVICE_INFO* deviceinfo) {
     return 0;
 }
 
-int fill_device_info(DEVICE_INFO* deviceinfo) {
+int fill_device_info(DEVICE_BASE_INFO* deviceinfo) {
     if (NULL==deviceinfo)
         return -1;
 #if !_WIN32
@@ -52,5 +52,27 @@ int fill_device_info(DEVICE_INFO* deviceinfo) {
     }
     printf("get mac %s\n", deviceinfo->sn);
 #endif
+    return 0;
+}
+
+int check_base_cmd(DEV_CMD_BASE* bcmd) {
+    if (NULL==bcmd)
+        return -CMD_RSP_CODE_PARAM;
+
+    // 这几个命令只用到了基础命令,不考虑协议版本差异
+     switch (bcmd->cmd) {
+        case CMD_DEVICE_SCAN:
+        case CMD_SERVER_UP:
+        case CMD_DEV_REBOOT:
+            return 0;
+        break;
+        default:
+        break;
+     }
+
+    if (PROT_VMAJOR!=bcmd->vMajor 
+    || PROT_VMINOR!=bcmd->vMinor
+    || PROT_VPACK!=bcmd->vtail)
+        return -CMD_RSP_CODE_PROT_VER;
     return 0;
 }
