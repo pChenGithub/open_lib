@@ -20,6 +20,7 @@ int fill_device_info(DEVICE_BASE_INFO* deviceinfo);
 #define CMD_DEV_INIT      7   // 设备初始化
 #define CMD_DEV_REGAUID      8   // 设备恢复出厂
 #define CMD_SERVER_UP      9   // 升级服务程序
+const char* cmd_to_string(int cmd);
 
 #define PROT_VMAJOR     0// 大版本
 #define PROT_VMINOR     0// 小版本
@@ -49,6 +50,7 @@ typedef struct {
 #define CMD_RSP_CODE_CBK_NOTALLOW   3  // 回调函数不允许
 #define CMD_RSP_CODE_PARAM   4   // 参数错误
 #define CMD_RSP_CODE_PROT_VER   5   // 协议版本不匹配
+const char* cmd_rsp_code_to_string(int code);
 // DEV_CMD_RSP 如果修改，至少要大于 DEV_CMD_BASE 的大小 12字节
 // 通过cmd的版本判断是否是通版本协议
 typedef struct {
