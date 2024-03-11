@@ -183,15 +183,18 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
 
+	int count = 6;
     // 启动组播监听
-    int ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
+listen_again:
+	sleep(10);
+	int ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
     if (ret<0) {
-        printf("监听失败, 错误码 %d, 再一次\n", ret);
-		sleep(10);
-		ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
-		if (ret<0) {
-			printf("监听失败, 错误码 %d\n", ret);
+		if (count>0) {
+	        printf("监听失败, 错误码 %d, 再一次\n", ret);
+			count--;
+			goto listen_again;
 		}
+		printf("监听失败, 错误码 %d\n", ret);
     }
 
 #if 1
