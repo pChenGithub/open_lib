@@ -2,6 +2,18 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#include <pthread.h>
+#if __WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+#else
+#include <sys/socket.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/ether.h>		//ETH_P_ALL
+#endif
 
 typedef struct {
     // MAC头
@@ -25,6 +37,35 @@ typedef struct {
 
 int send_pkg();
 int recv_pkg(char* recvbuff, int bufflen);
+// **************************************************************
+// 回调参数声明
+typedef struct {
+    // 接受消息的套接字
+#if __WIN32
+    SOCKET socketfd;
+#else
+    int socketfd;
+#endif
+    // 消息源地址
+    struct sockaddr_in srcaddr;
+    socklen_t  len;
+    // 接收到的广播消息缓存
+    char recvBuff[128];
+} handRawArg;
+// 回调声明
+typedef void(*handRawMsg)(handRawArg* arg);
+// raw监听服务实例
+typedef struct {
+    // 回调函数参数
+    handRawArg callbackArg;
+    // 回调函数
+    handRawMsg fn;
+    // 线程号
+    pthread_t pid;
+} RAW_MSG_BODY;
+// 启用mac层数据监听
+int raw_listen_start(RAW_MSG_BODY **entry);
+int raw_listen_stop(RAW_MSG_BODY *entry);
 
 #ifdef __cplusplus
 }

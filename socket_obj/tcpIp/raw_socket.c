@@ -1,14 +1,8 @@
 #include "raw_socket.h"
 #include "tcpIp_errno.h"
-#include <sys/socket.h>
-#include <net/if.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <netinet/ether.h>		//ETH_P_ALL
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
-#include <arpa/inet.h>
 
 typedef struct {
     unsigned char destmac[6];
@@ -32,7 +26,11 @@ typedef struct {
 } RAW_IP_HEAD;
 
 int send_pkg() {
+#if __WIN32
+    int fd = 0;
+#else
     int fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+#endif
     if (fd<0)
         return -TCPIPERR_SOCKET_CREATE;
 
@@ -47,8 +45,13 @@ int send_pkg() {
 
 int recv_pkg(char* recvbuff, int bufflen) {
     int ret = 0;
-    int fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
-    if (fd<0)
+#if __WIN32
+    SOCKET sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (INVALID_SOCKET==sockfd)
+#else
+    int sockfd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ARP));
+    if (sockfd<0)
+#endif
         return -TCPIPERR_SOCKET_CREATE;
 
     struct sockaddr_in srcaddr;
@@ -57,7 +60,7 @@ int recv_pkg(char* recvbuff, int bufflen) {
     char ipsrc[16] = {0};
     char destsrc[16] = {0};
     while (1) {
-        ret = recvfrom(fd, recvbuff, bufflen, 0, (struct sockaddr *)(&srcaddr), &addr_length);
+        ret = recvfrom(sockfd, recvbuff, bufflen, 0, (struct sockaddr *)(&srcaddr), &addr_length);
         if (-1==ret) {
             printf("接收消息失败, 错误码 %d\n", errno);
             ret = -TCPIPERR_RECV_DATA;
@@ -69,13 +72,105 @@ int recv_pkg(char* recvbuff, int bufflen) {
         printf("源mac:");
         PRINTF_HEX(phead->srcmac, sizeof(phead->srcmac));
 
+#if !__WIN32
         inet_ntop(AF_INET, phead->src_addr, ipsrc, sizeof(ipsrc));
         inet_ntop(AF_INET, phead->dest_addr, destsrc, sizeof(destsrc));
         printf("源地址 %s\n", ipsrc);
         printf("目的地址 %s\n", destsrc);
         sleep(1);
+#endif
     }
 
-    close(fd);
+#if __WIN32
+    closesocket(sockfd);
+#else
+    close(sockfd);
+#endif
     return ret;
+}
+
+static void* wait_raw_data(void* arg) {
+    int ret = 0;
+    RAW_MSG_BODY* body = (RAW_MSG_BODY*)arg;
+    handRawArg* callArg = &(body->callbackArg);
+    // 设置线程名字
+    while (1) {
+        ret = recvfrom(callArg->socketfd, callArg->recvBuff, sizeof(callArg->recvBuff), 0,
+                       (struct sockaddr *)(&(callArg->srcaddr)), &(callArg->len));
+        if (-1==ret) {
+            printf("接收消息失败, 错误码 %d\n", errno);
+            continue;
+        }
+
+        // 如果设置了回调函数处理
+        if (NULL!=body->fn) {
+            body->fn(callArg);
+        }
+    }
+    return NULL;
+}
+
+int raw_listen_start(RAW_MSG_BODY** entry) {
+    int ret = 0;
+    if (NULL==entry)
+        return -TCPIPERR_CHECK_PARAM;
+
+    RAW_MSG_BODY* body = (RAW_MSG_BODY*)calloc(sizeof(RAW_MSG_BODY), 1);
+    if (NULL==body)
+        return -TCPIPERR_MALLOCA;
+
+#if __WIN32
+    SOCKET sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (INVALID_SOCKET==sockfd) {
+#else
+    int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    if (sockfd<0) {
+#endif
+        ret = -TCPIPERR_SOCKET_CREATE;
+        goto free_exit;
+    }
+
+    // 接收端,等待接受数据
+    ret = pthread_create(&(body->pid), NULL, wait_raw_data, body);
+    if (ret<0) {
+        ret = -TCPIPERR_PTREAD_CREAT;
+        goto close_exit;
+    }
+    //
+    pthread_detach(body->pid);
+
+    // 返回
+    *entry = body;
+    return 0;
+
+close_exit:
+#if __WIN32
+    closesocket(sockfd);
+#else
+    close(sockfd);
+#endif
+free_exit:
+    free(body);
+    body = NULL;
+    return ret;
+}
+
+int raw_listen_stop(RAW_MSG_BODY *entry) {
+    if (NULL==entry)
+        return -TCPIPERR_CHECK_PARAM;
+
+    // 关闭线程
+    pthread_cancel(entry->pid);
+    // 等待线程退出
+    pthread_join(entry->pid, NULL);
+    // 关闭fd
+#if __WIN32
+    closesocket(entry->callbackArg.socketfd);
+    //WSACleanup();
+#else
+    close(entry->callbackArg.socketfd);
+#endif
+    // 释放
+    free(entry);
+    return 0;
 }
