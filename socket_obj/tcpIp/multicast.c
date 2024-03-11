@@ -205,12 +205,12 @@ int multicast_resp(RECV_MSG_BODY* entry, char* buff, int len) {
     return 0;
 }
 
-int multicast_sendmsg(char* buff, int bufflen, int sendsize, char* groupIp, int port) {
-    return multicast_sendmsg_wait(buff, bufflen, sendsize, groupIp, port, NULL, 0);
+int multicast_sendmsg(char* buff, int bufflen, int sendsize, char* groupIp, int port, const char* if_ip) {
+    return multicast_sendmsg_wait(buff, bufflen, sendsize, groupIp, port, if_ip, NULL, 0);
 }
 
 int multicast_sendmsg_wait(char* buff, int bufflen, int sendsize,
-                           char* groupIp, int port,  handMulticastRsp callbk, unsigned int ms) {
+                           char* groupIp, int port, const char* if_ip, handMulticastRsp callbk, unsigned int ms) {
 #if __WIN32
     SOCKET socketfd = 0;
 #else
@@ -248,8 +248,36 @@ int multicast_sendmsg_wait(char* buff, int bufflen, int sendsize,
     // 设置为非阻塞
 
     // 设置同主机还是跨主机
-    //int iFlag = 1;	// 0-同一台主机 1-夸主机
-    //ret = setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_TTL, (char*)&iFlag, sizeof(iFlag));
+    // 设置 TTL
+    int iFlag = 128;	// 0-同一台主机 1-夸主机
+    ret = setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_TTL, (char*)&iFlag, sizeof(iFlag));
+
+    // 设置指定网卡发送
+    struct ip_mreq mreq; // 多播地址结构体
+    memset((void*)&mreq, 0, sizeof(struct ip_mreq));
+    mreq.imr_multiaddr.s_addr = inet_addr(groupIp);
+    if (NULL==if_ip)
+        mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    else
+        mreq.imr_interface.s_addr = inet_addr(if_ip);
+    // 加入组
+    ret = setsockopt(socketfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq));
+    if (ret<0) {
+        printf("add membership, errno %d\n", errno);
+        ret = -1;
+        goto error_set;
+    }
+#if 0
+    struct in_addr inaddr = {0};
+    inaddr.s_addr = inet_addr("172.16.70.13");
+    /*此处指定组播数据的出口网卡，如果不设置则会根据路由表指定默认路由出口*/
+    if(-1 == setsockopt(socketfd, IPPROTO_IP, IP_MULTICAST_IF, (char *)&inaddr, sizeof(inaddr)))
+    {
+        printf("set error IP_MULTICAST_IF %s\n", "172.16.70.13");
+        ret = -1;
+        goto error_set;
+    }
+#endif
 
     //  设置发送地址,地址即是组播地址
     struct sockaddr_in cliaddr;

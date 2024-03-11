@@ -32,9 +32,9 @@ typedef struct {
 } FILE_FRAME;
 
 #if __WIN32
-int sock_send_file(SOCKET socketfd, const char* file) {
+int sock_send_file(SOCKET socketfd, const char* file, FILE_STATUS_CBK cb) {
 #else
-int sock_send_file(int socketfd, const char* file) {
+int sock_send_file(int socketfd, const char* file, FILE_STATUS_CBK cb) {
 #endif
     int ret = 0;
     if (NULL==file)
@@ -107,6 +107,9 @@ int sock_send_file(int socketfd, const char* file) {
             goto free_exit;
         }
 
+        // 发送一帧成功
+        if (NULL!=cb)
+            cb(fframe->index, fframe->framecount, 0);
         // 发送的index从0开始
         fframe->index ++;
         if ((fframe->index+1)==fframe->framecount)
@@ -130,9 +133,9 @@ close_exit:
 }
 
 #if __WIN32
-int sock_recv_file(SOCKET socketfd, const char* file) {
+int sock_recv_file(SOCKET socketfd, const char* file, FILE_STATUS_CBK cb) {
 #else
-int sock_recv_file(int socketfd, const char* file) {
+int sock_recv_file(int socketfd, const char* file, FILE_STATUS_CBK cb) {
 #endif
     int ret = 0;
     unsigned int datasize = 0;
@@ -200,6 +203,10 @@ int sock_recv_file(int socketfd, const char* file) {
             goto free_exit;
         }
 
+        // 完成一帧发送
+        if (NULL!=cb)
+            cb(fframe->index, fframe->framecount, 0);
+
         // 期待下一帧
         rsp.index ++;
         if (rsp.index==fframe->framecount) {
@@ -216,7 +223,7 @@ free_exit:
     return ret;
 }
 
-int ip_send_file(const char *ip, int port, const char *file)
+int ip_send_file(const char *ip, int port, const char *file, FILE_STATUS_CBK cb)
 {
 #if __WIN32
     SOCKET socketfd = 0;
@@ -270,7 +277,7 @@ int ip_send_file(const char *ip, int port, const char *file)
         goto error_set;
     }
 
-    ret = sock_send_file(socketfd, file);
+    ret = sock_send_file(socketfd, file, cb);
     if (ret<0)
         printf("send file error, %d\n", ret);
 error_set:
@@ -283,7 +290,7 @@ error_set:
     return ret;
 }
 
-int ip_recv_file(const char *ip, int port, const char *file)
+int ip_recv_file(const char *ip, int port, const char *file, FILE_STATUS_CBK cb)
 {
 #if __WIN32
     SOCKET socketfd = 0;
@@ -337,7 +344,7 @@ int ip_recv_file(const char *ip, int port, const char *file)
         goto error_set;
     }
 
-    ret = sock_recv_file(socketfd, file);
+    ret = sock_recv_file(socketfd, file, cb);
     if (ret<0)
         printf("recv file error, %d\n", ret);
 error_set:

@@ -16,18 +16,20 @@ extern "C" {
 #include <arpa/inet.h>
 #endif
 
+typedef void (FILE_STATUS_CBK)(int pkgindex, int pkgcount, int errcode);
+
 // 发送和接收文件
 #if __WIN32
-int sock_send_file(SOCKET socketfd, const char* file);
-int sock_recv_file(SOCKET socketfd, const char* file);
+int sock_send_file(SOCKET socketfd, const char* file, FILE_STATUS_CBK cb);
+int sock_recv_file(SOCKET socketfd, const char* file, FILE_STATUS_CBK cb);
 #else
-int sock_send_file(int socketfd, const char* file);
-int sock_recv_file(int socketfd, const char* file);
+int sock_send_file(int socketfd, const char* file, FILE_STATUS_CBK cb);
+int sock_recv_file(int socketfd, const char* file, FILE_STATUS_CBK cb);
 #endif
 // tcp打开socket，绑定地址和端口
 // 这两个接口都是客户端
-int ip_send_file(const char* ip, int port, const char* file);
-int ip_recv_file(const char* ip, int port, const char* file);
+int ip_send_file(const char* ip, int port, const char* file, FILE_STATUS_CBK cb);
+int ip_recv_file(const char* ip, int port, const char* file, FILE_STATUS_CBK cb);
 
 // 发送和接收
 
