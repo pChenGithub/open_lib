@@ -65,6 +65,9 @@ typedef struct {
 {{PROT_VPACK,PROT_VMAJOR,PROT_VMINOR,0,0,0},},\
     }
 
+// 自定义协议
+#define PROTOCOL_CUSTMON    0x0505
+
 // 基础指令校验
 int check_base_cmd(DEV_CMD_BASE* bcmd);
 
