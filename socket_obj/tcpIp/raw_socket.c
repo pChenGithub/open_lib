@@ -95,6 +95,7 @@ static void* wait_raw_data(void* arg) {
     handRawArg* callArg = &(body->callbackArg);
     // 设置线程名字
     while (1) {
+        callArg->len = sizeof(struct sockaddr_in);
         ret = recvfrom(callArg->socketfd, callArg->recvBuff, sizeof(callArg->recvBuff), 0,
                        (struct sockaddr *)(&(callArg->srcaddr)), &(callArg->len));
         if (-1==ret) {
@@ -110,7 +111,12 @@ static void* wait_raw_data(void* arg) {
     return NULL;
 }
 
-int raw_listen_start(RAW_MSG_BODY** entry) {
+int raw_listen_start(RAW_MSG_BODY** entry, int protocalType) {
+#if __WIN32
+    SOCKET sockfd = 0;
+#else
+    int sockfd = 0;
+#endif
     int ret = 0;
     if (NULL==entry)
         return -TCPIPERR_CHECK_PARAM;
@@ -120,10 +126,22 @@ int raw_listen_start(RAW_MSG_BODY** entry) {
         return -TCPIPERR_MALLOCA;
 
 #if __WIN32
-    SOCKET sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
+    WORD sockVersion=MAKEWORD(2,2);
+    WSADATA wsaData;//WSADATA结构体变量的地址值
+    if(WSAStartup(sockVersion, &wsaData)!=0)
+    {
+        printf("WSAStartup() error!");
+        free(body);
+        return 0;
+    }
+#endif
+
+    // IPPROTO_ICMP
+    sockfd = socket(AF_INET, SOCK_RAW, protocalType);
+#if __WIN32
     if (INVALID_SOCKET==sockfd) {
+        WSACleanup();
 #else
-    int sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
     if (sockfd<0) {
 #endif
         ret = -TCPIPERR_SOCKET_CREATE;
@@ -146,6 +164,7 @@ int raw_listen_start(RAW_MSG_BODY** entry) {
 close_exit:
 #if __WIN32
     closesocket(sockfd);
+    WSACleanup();
 #else
     close(sockfd);
 #endif
@@ -166,11 +185,108 @@ int raw_listen_stop(RAW_MSG_BODY *entry) {
     // 关闭fd
 #if __WIN32
     closesocket(entry->callbackArg.socketfd);
-    //WSACleanup();
+    WSACleanup();
 #else
     close(entry->callbackArg.socketfd);
 #endif
     // 释放
     free(entry);
     return 0;
+}
+
+int raw_sendmsg(char *buff, int bufflen, int sendsize, char *destmac, char *srcmac, int protocalType)
+{
+    return  raw_sendmsg_wait(buff, bufflen, sendsize, destmac, srcmac, protocalType, NULL, 0);
+}
+
+int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char *srcmac, int protocalType, handRawRsp callbk, unsigned int ms)
+{
+    int selret = 0;
+#if __WIN32
+    SOCKET sockfd = 0;
+#else
+    int sockfd = 0;
+#endif
+    int ret = 0;
+    if (NULL==buff || bufflen<=0 || sendsize <=0)
+        return -TCPIPERR_CHECK_PARAM;
+
+    if (bufflen<(sendsize+14))
+        return -TCPIPERR_CHECK_PARAM;
+
+#if __WIN32
+    WORD sockVersion=MAKEWORD(2,2);
+    WSADATA wsaData;//WSADATA结构体变量的地址值
+    if(WSAStartup(sockVersion, &wsaData)!=0)
+    {
+        printf("WSAStartup() error!");
+        return 0;
+    }
+#endif
+
+    // IPPROTO_ICMP
+    sockfd = socket(AF_INET, SOCK_RAW, protocalType);
+#if __WIN32
+    if (INVALID_SOCKET==sockfd) {
+        WSACleanup();
+#else
+    if (sockfd<0) {
+#endif
+        return -TCPIPERR_SOCKET_CREATE;
+    }
+
+    struct sockaddr_in cliaddr;
+    memset(&cliaddr,0,sizeof(cliaddr));
+    // 数据发送
+    ret = sendto(sockfd, buff, sendsize, 0, (struct sockaddr*)(&cliaddr), sizeof(cliaddr));
+    if (-1==ret) {
+        printf("发送组播失败, errno %d\n", errno);
+        ret = -TCPIPERR_SENDMSG;
+        goto close_exit;
+    }
+
+    // 等待数据
+    fd_set rfds;
+    struct timeval tv;
+    FD_ZERO(&rfds);
+    FD_SET(sockfd, &rfds);
+    // 设置超时时间
+    tv.tv_sec = 0;
+    tv.tv_usec = 10000;
+
+    // 预计读取数据为超时
+    ret = -TCPIPERR_WAITRECV_TIMEOUT;
+start_select:
+    selret = select(sockfd+1, &rfds, NULL, NULL, &tv);
+    if (-1==selret) {
+        ret = -TCPIPERR_SELECT;
+    } else if (0 == selret) {
+        printf("wait data timeout\n");
+        //ret = -TCPIPERR_WAITRECV_TIMEOUT;
+    } else {
+        // >0,有数据
+        ret = recvfrom(sockfd, buff, bufflen, 0, NULL, NULL);
+        if (-1==ret) {
+            ret = -TCPIPERR_RECVMSG;
+            goto close_exit;
+        }
+        // printf("获取消息 %s, ret %d\n", buff, ret);
+
+        if (ret>0 && NULL!=callbk) {
+            callbk(buff, ret);
+        }
+        // 标记读取成功,
+        ret = 0;
+        // 重新监听是否有数据返回
+        goto start_select;
+    }
+
+close_exit:
+#if __WIN32
+    closesocket(sockfd);
+    WSACleanup();
+#else
+    close(sockfd);
+#endif
+    return ret;
 }

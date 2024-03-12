@@ -71,6 +71,7 @@ int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, cha
     if(WSAStartup(sockVersion, &wsaData)!=0)
     {
         printf("WSAStartup() error!");
+        free(body);
         return 0;
     }
 #endif
@@ -79,6 +80,7 @@ int multicast_listen_start(RECV_MSG_BODY** entry, handMultiaddrMst callback, cha
     socketfd = socket(AF_INET, SOCK_DGRAM, 0);
 #if __WIN32
     if (INVALID_SOCKET==socketfd) {
+        WSACleanup();
 #else
     if (-1==socketfd) {
 #endif

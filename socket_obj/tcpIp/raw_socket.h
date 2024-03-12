@@ -64,8 +64,15 @@ typedef struct {
     pthread_t pid;
 } RAW_MSG_BODY;
 // 启用mac层数据监听
-int raw_listen_start(RAW_MSG_BODY **entry);
+int raw_listen_start(RAW_MSG_BODY **entry, int protocalType);
 int raw_listen_stop(RAW_MSG_BODY *entry);
+// 发送原始套接字消息
+int raw_sendmsg(char* buff, int bufflen, int sendsize, char* destmac, char *srcmac, int protocalType);
+// 处理回复消息回调
+typedef int(*handRawRsp)(char* rspstr, int len);
+// 发送消息,并超时等到回复
+// ms指定为0表示不等带回复
+int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char* srcmac, int protocalType, handRawRsp callbk, unsigned int ms);
 
 #ifdef __cplusplus
 }
