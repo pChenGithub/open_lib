@@ -67,12 +67,12 @@ typedef struct {
 int raw_listen_start(RAW_MSG_BODY **entry, handRawMsg cb, int protocalType);
 int raw_listen_stop(RAW_MSG_BODY *entry);
 // 发送原始套接字消息
-int raw_sendmsg(char* buff, int bufflen, int sendsize, char* destmac, char *srcmac, int protocalType);
+int raw_sendmsg(char* buff, int bufflen, int sendsize, unsigned char destmac[6], unsigned char srcmac[6], int protocalType);
 // 处理回复消息回调
 typedef int(*handRawRsp)(char* rspstr, int len);
 // 发送消息,并超时等到回复
 // ms指定为0表示不等带回复
-int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char* srcmac, int protocalType, handRawRsp callbk, unsigned int ms);
+int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destmac[], unsigned char srcmac[], int protocalType, handRawRsp callbk, unsigned int ms);
 
 #ifdef __cplusplus
 }
