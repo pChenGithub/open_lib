@@ -28,5 +28,7 @@
 
 #define TCPIPERR_CALLBACK 22     // 回调函数返回异常
 
+#define TCPIPERR_BUFF_SIZE  23  // 缓存大小异常
+
 #endif
 

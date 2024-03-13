@@ -88,7 +88,7 @@ static void clear_pthreads(TASK_ENTRY* entry) {
         pthread_cancel(ppthread[i].pid);
         //printf("回收线程\n");
         pthread_join(ppthread[i].pid, NULL);
-        printf("回收完成 %d\n", ppthread[i].NO);
+        printf("pthread_join ok %d\n", ppthread[i].NO);
 
         sem_destroy(&(ppthread[i].wait_task));
         memset(ppthread + i, 0, sizeof(THREAD_ENTRY));

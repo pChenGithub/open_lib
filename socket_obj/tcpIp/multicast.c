@@ -292,7 +292,7 @@ int multicast_sendmsg_wait(char* buff, int bufflen, int sendsize,
     // 数据广播
     ret = sendto(socketfd, buff, sendsize, 0, (struct sockaddr*)(&cliaddr), sizeof(struct sockaddr));
     if (-1==ret) {
-        printf("发送组播失败, errno %d\n", errno);
+        printf("send data fail, errno %d\n", errno);
         ret = -TCPIPERR_SENDMSG;
     }
 

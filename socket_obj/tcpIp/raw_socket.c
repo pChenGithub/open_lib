@@ -194,12 +194,12 @@ int raw_listen_stop(RAW_MSG_BODY *entry) {
     return 0;
 }
 
-int raw_sendmsg(char *buff, int bufflen, int sendsize, char *destmac, char *srcmac, int protocalType)
+int raw_sendmsg(char *buff, int bufflen, int sendsize, unsigned char destmac[6], unsigned char srcmac[6], int protocalType)
 {
     return  raw_sendmsg_wait(buff, bufflen, sendsize, destmac, srcmac, protocalType, NULL, 0);
 }
 
-int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char *srcmac, int protocalType, handRawRsp callbk, unsigned int ms)
+int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destmac[6], unsigned char srcmac[6], int protocalType, handRawRsp callbk, unsigned int ms)
 {
     int selret = 0;
 #if __WIN32
@@ -211,8 +211,9 @@ int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char 
     if (NULL==buff || bufflen<=0 || sendsize <=0)
         return -TCPIPERR_CHECK_PARAM;
 
-    if (bufflen<(sendsize+14))
-        return -TCPIPERR_CHECK_PARAM;
+    char* psend = (char*)calloc(sendsize+14, 1);
+    if (NULL==psend)
+        return -TCPIPERR_MALLOCA;
 
 #if __WIN32
     WORD sockVersion=MAKEWORD(2,2);
@@ -220,6 +221,7 @@ int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char 
     if(WSAStartup(sockVersion, &wsaData)!=0)
     {
         printf("WSAStartup() error!");
+        free(psend);
         return 0;
     }
 #endif
@@ -232,16 +234,28 @@ int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char 
 #else
     if (sockfd<0) {
 #endif
-        return -TCPIPERR_SOCKET_CREATE;
+        ret = -TCPIPERR_SOCKET_CREATE;
+        goto free_exit;
     }
+
+    // 填充 psend
+    memcpy(psend, srcmac, 6);
+    memcpy(psend+6, destmac, 6);
+    psend[12] = 0x00;
+    psend[13] = 0x08;
+    memcpy(psend+14, buff, sendsize);
 
     struct sockaddr_in cliaddr;
     memset(&cliaddr,0,sizeof(cliaddr));
     // 数据发送
     ret = sendto(sockfd, buff, sendsize, 0, (struct sockaddr*)(&cliaddr), sizeof(cliaddr));
     if (-1==ret) {
-        printf("发送组播失败, errno %d\n", errno);
-        ret = -TCPIPERR_SENDMSG;
+#if __WIN32
+        printf("send raw fail, errno %d\n", WSAGetLastError());
+#else
+        printf("send raw fail, errno %d\n", errno);
+#endif
+        ret = -TCPIPERR_SEND_DATA;
         goto close_exit;
     }
 
@@ -288,5 +302,8 @@ close_exit:
 #else
     close(sockfd);
 #endif
+free_exit:
+    free(psend);
+    psend = NULL;
     return ret;
 }
