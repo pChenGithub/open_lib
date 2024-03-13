@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 typedef struct {
     unsigned char destmac[6];
@@ -111,7 +113,7 @@ static void* wait_raw_data(void* arg) {
     return NULL;
 }
 
-int raw_listen_start(RAW_MSG_BODY** entry, int protocalType) {
+int raw_listen_start(RAW_MSG_BODY** entry, handRawMsg cb, int protocalType) {
 #if __WIN32
     SOCKET sockfd = 0;
 #else
@@ -136,18 +138,21 @@ int raw_listen_start(RAW_MSG_BODY** entry, int protocalType) {
     }
 #endif
 
+#if __WIN32
     // IPPROTO_ICMP
     sockfd = socket(AF_INET, SOCK_RAW, protocalType);
-#if __WIN32
     if (INVALID_SOCKET==sockfd) {
         WSACleanup();
 #else
+    sockfd = socket(PF_PACKET, SOCK_RAW, protocalType);
     if (sockfd<0) {
 #endif
         ret = -TCPIPERR_SOCKET_CREATE;
         goto free_exit;
     }
 
+    body->callbackArg.socketfd = sockfd;
+    body->fn = cb;
     // 接收端,等待接受数据
     ret = pthread_create(&(body->pid), NULL, wait_raw_data, body);
     if (ret<0) {
@@ -224,12 +229,13 @@ int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, char *destmac, char 
     }
 #endif
 
+#if __WIN32
     // IPPROTO_ICMP
     sockfd = socket(AF_INET, SOCK_RAW, protocalType);
-#if __WIN32
     if (INVALID_SOCKET==sockfd) {
         WSACleanup();
 #else
+    sockfd = socket(PF_PACKET, SOCK_RAW, protocalType);
     if (sockfd<0) {
 #endif
         return -TCPIPERR_SOCKET_CREATE;
