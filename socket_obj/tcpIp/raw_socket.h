@@ -35,6 +35,24 @@ typedef struct {
     unsigned char dest_addr[4];
 } RAW_MAC_IP_HEAD;
 
+typedef struct {
+    // 42 byte
+    // MAC头
+    unsigned char destmac[6];
+    unsigned char srcmac[6];
+    unsigned char type[2];  // 协议类型 ipv4(0x0800)/ipv6
+    // ARP头
+    unsigned char hardtype[2];                     
+    unsigned char protocoltype[2];
+    unsigned char hardsize;
+    unsigned char protocolsize;
+    unsigned char opcode[2];
+    unsigned char sendmac[6];
+    unsigned char sendip[4];
+    unsigned char targetmac[6];
+    unsigned char targetip[4];
+} RAW_MAC_ARP_HEAD;
+
 int send_pkg();
 int recv_pkg(char* recvbuff, int bufflen);
 // **************************************************************
@@ -50,6 +68,7 @@ typedef struct {
     struct sockaddr_in srcaddr;
     socklen_t  len;
     // 接收到的广播消息缓存
+    unsigned int datalen;
     char recvBuff[128];
 } handRawArg;
 // 回调声明
@@ -67,12 +86,14 @@ typedef struct {
 int raw_listen_start(RAW_MSG_BODY **entry, handRawMsg cb, int protocalType);
 int raw_listen_stop(RAW_MSG_BODY *entry);
 // 发送原始套接字消息
-int raw_sendmsg(char* buff, int bufflen, int sendsize, unsigned char destmac[6], unsigned char srcmac[6], int protocalType);
+int raw_sendmsg(char* buff, int bufflen, int sendsize, unsigned char destmac[6], unsigned char srcmac[6], uint16_t protocalType);
 // 处理回复消息回调
 typedef int(*handRawRsp)(char* rspstr, int len);
 // 发送消息,并超时等到回复
 // ms指定为0表示不等带回复
-int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destmac[], unsigned char srcmac[], int protocalType, handRawRsp callbk, unsigned int ms);
+int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destmac[], unsigned char srcmac[], uint16_t protocalType, handRawRsp callbk, unsigned int ms);
+// arp包发送
+int arp_sendmsg_wait(char *strbuff, int bufflen, unsigned char destmac[6], handRawRsp callbk, unsigned int ms);
 
 #ifdef __cplusplus
 }

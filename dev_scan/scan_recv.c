@@ -1,5 +1,6 @@
 #include "tcpIp/multicast.h"
 #include "tcpIp/socket_file.h"
+#include "tcpIp/raw_socket.h"
 #include "protocol/device_prot.h"
 #include "../exeShell_obj/mixShell.h"
 #include <unistd.h>
@@ -8,6 +9,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+static RAW_MSG_BODY *rawbody = NULL;
 static RECV_MSG_BODY *body = NULL;
 static RECV_TCP_MSG_BODY *tcpbody = NULL;
 
@@ -31,7 +33,7 @@ static int send_logs(handTcpArg* arg) {
     exeShell(cmd, NULL, 0);
     // 发送
     printf("开始发送日志\n");
-    int ret = sock_send_file(arg->msgfd, "/tmp/uploard_log.tar.gz");
+    int ret = sock_send_file(arg->msgfd, "/tmp/uploard_log.tar.gz", NULL);
     if (ret<0) {
         return -1;
     }
@@ -40,7 +42,7 @@ static int send_logs(handTcpArg* arg) {
 // 处理安装包文件
 static int recv_app_pkg(handTcpArg* arg) {
     printf("处理下发的更新包\n");
-    int ret = sock_recv_file(arg->msgfd, "/tmp/app_pkg.tar.gz");
+    int ret = sock_recv_file(arg->msgfd, "/tmp/app_pkg.tar.gz", NULL);
     if (ret<0) {
         printf("接收文件失败,错误码 %d\n", ret);
         return -1;
@@ -76,7 +78,7 @@ static int recv_app_pkg(handTcpArg* arg) {
 // 处理服务bin文件
 static int recv_server_bin(handTcpArg* arg) {
     printf("处理下发的服务bin文件\n");
-    int ret = sock_recv_file(arg->msgfd, "/tmp/scan_recv_arm");
+    int ret = sock_recv_file(arg->msgfd, "/tmp/scan_recv_arm", NULL);
     if (ret<0) {
         return -1;
     }
@@ -177,17 +179,49 @@ static void recvmsgbd(handMulticastArg* arg) {
 #endif
 }
 
+static void recvRawMsgbd(handRawArg* arg) {
+    RAW_MAC_IP_HEAD* phead = (RAW_MAC_IP_HEAD*)(arg->recvBuff);
+    
+    if (arg->datalen<=60)
+        return ;
+    
+    printf("接受数据长度 %d\n", arg->datalen);
+    unsigned char* destmac = phead->destmac;
+    unsigned char* srcmac = phead->srcmac;
+
+    //if (0x6e!=srcmac[0] || 0xcc!=srcmac[1])
+     //   return ;
+
+    printf("dest mac %02x%02x%02x%02x%02x%02x\n", destmac[0], destmac[1], destmac[2], destmac[3], destmac[4], destmac[5]);
+    printf("src mac %02x%02x%02x%02x%02x%02x\n", srcmac[0], srcmac[1], srcmac[2], srcmac[3], srcmac[4], srcmac[5]);
+    printf("type %02x %02x \n", phead->type[0], phead->type[1]);
+
+    printf("自定义内容(字符串) %s\n", arg->recvBuff+60);
+}
+
 int main(int argc, char const *argv[]) {
+    int ret = 0;
     if (argc<3) {
         printf("输入参数错误, 举例 %s <ip> <port>\n", argv[0]);
         return -1;
     }
 
+    // 如果当前没有ip,启动mac组播消息监听,完成了ip地址设置之后,跳过这个模块
+    if (1) {
+        ret = raw_listen_start(&rawbody, recvRawMsgbd, htons(ETH_P_ARP));
+        if (ret<0)
+            printf("监听RAW失败, 错误码 %d\n", ret);
+
+    }
+
+    while (1)
+        sleep(100);
+
 	int count = 6;
     // 启动组播监听
 listen_again:
 	sleep(10);
-	int ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
+	ret = multicast_listen_start(&body, recvmsgbd, (char*)(argv[1]), atoi(argv[2]));
     if (ret<0) {
 		if (count>0) {
 	        printf("监听失败, 错误码 %d, 再一次\n", ret);

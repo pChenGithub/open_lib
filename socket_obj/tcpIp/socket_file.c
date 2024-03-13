@@ -60,7 +60,7 @@ int sock_send_file(int socketfd, const char* file, FILE_STATUS_CBK cb) {
     if (fframe->laseframesize)
         fframe->framecount++;
 
-    printf("size %d, lastsize %d, count %d\n", fframe->filesize, fframe->laseframesize, fframe->framecount);
+    printf("size %ld, lastsize %d, count %d\n", fframe->filesize, fframe->laseframesize, fframe->framecount);
     int sendsize = sizeof(FILE_FRAME);
     int readsize = FRAME_BUFF_SIZE;
     if (1==fframe->framecount)
