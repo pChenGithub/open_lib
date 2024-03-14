@@ -57,13 +57,13 @@ typedef struct {
     DEV_CMD cmd;
     // 回复信息从这里扩展，大小控制一下
     union {
-        char raw[0];
+        int raw;
     };
 } DEV_CMD_RSP;
 #define CMD_RSP_INIT(rsp) \
     DEV_CMD_RSP rsp = { \
-{{PROT_VPACK,PROT_VMAJOR,PROT_VMINOR,0,0,0},},\
-    }
+{{PROT_VPACK,PROT_VMAJOR,PROT_VMINOR,0,0,0},{{0},{0}}},0 \
+}
 
 // 自定义协议
 #define PROTOCOL_CUSTMON    0x0505

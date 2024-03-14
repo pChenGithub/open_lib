@@ -213,6 +213,7 @@ int multicast_sendmsg(char* buff, int bufflen, int sendsize, char* groupIp, int 
 
 int multicast_sendmsg_wait(char* buff, int bufflen, int sendsize,
                            char* groupIp, int port, const char* if_ip, handMulticastRsp callbk, unsigned int ms) {
+    (void)ms;
 #if __WIN32
     SOCKET socketfd = 0;
 #else
@@ -362,6 +363,7 @@ error_set:
 
 int udp_sendmsg_wait(char* buff, int bufflen, int sendsize,
                      char* ip, int port, handMulticastRsp callbk, unsigned int ms) {
+    (void)ms;
 #if __WIN32
     SOCKET socketfd = 0;
 #else

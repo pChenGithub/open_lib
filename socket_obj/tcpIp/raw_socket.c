@@ -5,7 +5,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#if !__WIN32
 #include <linux/if_packet.h>
+#endif
 
 typedef struct {
     unsigned char destmac[6];
@@ -40,11 +43,11 @@ int send_pkg() {
     return 0;
 }
 
-#define PRINTF_HEX(buff, len) {\
-    for (int i=0;i<len;i++) \
-        printf("%02x", buff[i]); \
+#define PRINTF_HEX(buff, len) ({\
+    for (unsigned int i=0;i<(len);i++) \
+        printf("%02x", (buff)[i]); \
     printf("\n"); \
-}
+})
 
 int recv_pkg(char* recvbuff, int bufflen) {
     int ret = 0;
@@ -60,8 +63,6 @@ int recv_pkg(char* recvbuff, int bufflen) {
     struct sockaddr_in srcaddr;
 	socklen_t addr_length = sizeof(struct sockaddr_in);
 
-    char ipsrc[16] = {0};
-    char destsrc[16] = {0};
     while (1) {
         ret = recvfrom(sockfd, recvbuff, bufflen, 0, (struct sockaddr *)(&srcaddr), &addr_length);
         if (-1==ret) {
@@ -76,6 +77,8 @@ int recv_pkg(char* recvbuff, int bufflen) {
         PRINTF_HEX(phead->srcmac, sizeof(phead->srcmac));
 
 #if !__WIN32
+        char ipsrc[16] = {0};
+        char destsrc[16] = {0};
         inet_ntop(AF_INET, phead->src_addr, ipsrc, sizeof(ipsrc));
         inet_ntop(AF_INET, phead->dest_addr, destsrc, sizeof(destsrc));
         printf("源地址 %s\n", ipsrc);
@@ -213,14 +216,15 @@ int raw_listen_stop(RAW_MSG_BODY *entry) {
 }
 
 int raw_sendmsg(char *buff, int bufflen, int sendsize, unsigned char destmac[6], 
-    unsigned char srcmac[6], uint16_t protocalType)
+    unsigned char srcmac[6], unsigned short protocalType)
 {
     return  raw_sendmsg_wait(buff, bufflen, sendsize, destmac, srcmac, protocalType, NULL, 0);
 }
 
 int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destmac[6], 
-    unsigned char srcmac[6], uint16_t protocalType, handRawRsp callbk, unsigned int ms)
+    unsigned char srcmac[6], unsigned short protocalType, handRawRsp callbk, unsigned int ms)
 {
+    (void)ms;
     int selret = 0;
 #if __WIN32
     SOCKET sockfd = 0;
@@ -268,6 +272,8 @@ int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destma
     //psend[13] = 0x06;
     memcpy(psend+14, buff, sendsize);
 
+#if __WIN32
+#else
     struct sockaddr_ll  cliaddr;
     bzero(&cliaddr, sizeof(cliaddr));
     int index = if_nametoindex ("enp0s3");
@@ -277,14 +283,9 @@ int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destma
     //cliaddr.sll_family = AF_PACKET;
     //memcpy (cliaddr.sll_addr, srcmac, 6);
     //cliaddr.sll_halen = htons (6);
-
-    printf("发送数据长度 %d\n", sendsize+14);
-	for (int i=0;i<sendsize+14;i++) {
-		printf("%02x ", psend[i]);
-	}
-	printf("\n");
     // 数据发送
     ret = sendto(sockfd, psend, sendsize+14, 0, (struct sockaddr*)(&cliaddr), sizeof(cliaddr));
+#endif
     if (ret<0) {
 #if __WIN32
         printf("send raw fail, errno %d\n", WSAGetLastError());
@@ -344,7 +345,9 @@ free_exit:
     return ret;
 }
 
-int arp_sendmsg_wait(char *strbuff, int bufflen, unsigned char destmac[6], handRawRsp callbk, unsigned int ms) {
+int arp_sendmsg_wait(char *strbuff, unsigned int bufflen, unsigned int sendsize, unsigned char destmac[6],
+    handRawRsp callbk, unsigned int ms) {
+    (void)ms;
     int selret = 0;
 #if __WIN32
     SOCKET sockfd = 0;
@@ -355,7 +358,6 @@ int arp_sendmsg_wait(char *strbuff, int bufflen, unsigned char destmac[6], handR
     if (NULL==strbuff)
         return -TCPIPERR_CHECK_PARAM;
 
-    int sendsize = strlen(strbuff)+1;
     // MAC + ARP = 60
     unsigned char* psend = (unsigned char*)calloc(sendsize+60, 1);
     if (NULL==psend)
@@ -376,7 +378,7 @@ int arp_sendmsg_wait(char *strbuff, int bufflen, unsigned char destmac[6], handR
 
 #if __WIN32
     // IPPROTO_ICMP
-    sockfd = socket(AF_INET, SOCK_RAW, htons(ETH_P_ARP));
+    sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (INVALID_SOCKET==sockfd) {
         WSACleanup();
 #else
@@ -401,8 +403,13 @@ int arp_sendmsg_wait(char *strbuff, int bufflen, unsigned char destmac[6], handR
     parp->srcmac[4] =  0x19;
     parp->srcmac[5] =  0x64;
     
+#if __WIN32
+    parp->type[0] = 0x08;
+    parp->type[1] = 0x06;
+#else
     parp->type[0] = (ETH_P_ARP>>8)&0xff;
     parp->type[1] = ETH_P_ARP&0xff;
+#endif
     //psend[12] = 0x08;
     //psend[13] = 0x06;
     // arp
@@ -431,27 +438,32 @@ int arp_sendmsg_wait(char *strbuff, int bufflen, unsigned char destmac[6], handR
     parp->targetip[2] = 70;
     parp->targetip[3] = 185;
 
-
     // 扩展数据
     memcpy(psend+60, strbuff, sendsize);
 
+#if __WIN32
+    struct sockaddr_in  cliaddr;
+    bzero(&cliaddr, sizeof(cliaddr));
+    //int index = if_nametoindex ("enp0s3");
+    //printf("iface index %d\n", index);
+    //cliaddr.sll_ifindex = if_nametoindex ("enp0s3");
+    //cliaddr.sll_family = AF_PACKET;
+    //memcpy (cliaddr.sll_addr, srcmac, 6);
+    //cliaddr.sll_halen = htons (6);
+    // 数据发送
+    ret = sendto(sockfd, psend, sendsize+60, 0, (struct sockaddr*)(&cliaddr), sizeof(cliaddr));
+#else
     struct sockaddr_ll  cliaddr;
     bzero(&cliaddr, sizeof(cliaddr));
     int index = if_nametoindex ("enp0s3");
     printf("iface index %d\n", index);
-    
     cliaddr.sll_ifindex = if_nametoindex ("enp0s3");
     //cliaddr.sll_family = AF_PACKET;
     //memcpy (cliaddr.sll_addr, srcmac, 6);
     //cliaddr.sll_halen = htons (6);
-
-    printf("发送数据长度 %d\n", sendsize+14);
-    for (int i=0;i<sendsize+60;i++) {
-        printf("%02x ", psend[i]);
-    }
-    printf("\n");
     // 数据发送
     ret = sendto(sockfd, psend, sendsize+60, 0, (struct sockaddr*)(&cliaddr), sizeof(cliaddr));
+#endif
     if (ret<0) {
 #if __WIN32
         printf("send raw fail, errno %d\n", WSAGetLastError());

@@ -8,7 +8,7 @@
 // 处理其他提交任务
 static void hand_other_task(void* arg) {
     THREAD_ENTRY *ppthread = (THREAD_ENTRY*) arg;
-    TASK_ENTRY *entry = (TASK_ENTRY *)(ppthread->task_entry);
+    //TASK_ENTRY *entry = (TASK_ENTRY *)(ppthread->task_entry);
 
     //printf("线程 %d 处理其他任务\n", ppthread->NO);
     //printf("ttttttt1  %d\n", ppthread->NO);
@@ -73,6 +73,8 @@ static void* do_thread(void* arg) {
         if (NULL != ppthread->dofunc)
             ppthread->dofunc(ppthread);
     }
+
+    return NULL;
 }
 // 停止所有的线程,遍历数组
 static void clear_pthreads(TASK_ENTRY* entry) {
@@ -80,7 +82,7 @@ static void clear_pthreads(TASK_ENTRY* entry) {
         return;
     THREAD_ENTRY *ppthread = entry->threads;
     // 对线程数组加锁
-    for (int i = 0; i < entry->thread_count;i++) {
+    for (unsigned int i = 0; i < entry->thread_count;i++) {
         //printf("xxxx %d  %x\n", i,  ppthread[i].status);
         if (!(ppthread[i].status & PTHREAD_STA_RUN))
             continue;
@@ -125,7 +127,7 @@ int start_task_core(TASK_ENTRY **entry, unsigned int threadn)
 
     THREAD_ENTRY *ppthread = pptask->threads;
     // 创建任务线程
-    int i = 0;
+    unsigned int i = 0;
     for (; i < threadn; i++) {
         ppthread[i].NO = i;
         ppthread[i].task_entry = pptask;
@@ -188,9 +190,10 @@ void stop_task_core(TASK_ENTRY* entry) {
 }
 
 static int find_thread_do(TASK_ENTRY* entry, TASK_BODY* body, TASK_TYPE type) {
+    (void)type;
     // 获取空闲线程
     int ret = 0;
-    int i = 1;
+    unsigned int i = 1;
     THREAD_ENTRY *ppthread = NULL;
     if (NULL==entry || NULL==body) {
         ret = -TASK_CORE_CHECK_PARAM;

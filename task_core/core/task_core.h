@@ -1,4 +1,5 @@
-#pragma onece
+#ifndef __TASK_CORE_H__
+#define __TASK_CORE_H__
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -73,4 +74,6 @@ int commit_task(TASK_ENTRY* entry, COMMIT_TASK_CBK task, void *arg, TASK_TYPE ty
 int commit_task_sync();
 #ifdef __cplusplus
 }
+#endif
+
 #endif
