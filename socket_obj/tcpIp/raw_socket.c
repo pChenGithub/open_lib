@@ -149,7 +149,15 @@ int raw_listen_start(RAW_MSG_BODY** entry, handRawMsg cb, int protocalType) {
     if (INVALID_SOCKET==sockfd) {
         WSACleanup();
 #else
-    sockfd = socket(PF_PACKET, SOCK_RAW, protocalType);
+    switch (protocalType) {
+        case IPPROTO_ICMP:
+            sockfd = socket(AF_INET, SOCK_RAW, protocalType);
+        break;
+        default:
+            sockfd = socket(PF_PACKET, SOCK_RAW, protocalType);
+        break;
+    }
+    
     if (sockfd<0) {
 #endif
         ret = -TCPIPERR_SOCKET_CREATE;
