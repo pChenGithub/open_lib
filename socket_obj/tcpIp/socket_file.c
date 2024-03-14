@@ -374,7 +374,11 @@ static void *waitTcpMsg(void* arg) {
         callArg->len = sizeof(struct sockaddr_in);
         printf("wait client connect\n");
         msgfd = accept(body->socketfd, (struct sockaddr*)&(callArg->srcaddr), &callArg->len);
+#if __WIN32
+        if (INVALID_SOCKET==msgfd) {
+#else
         if (msgfd<0) {
+#endif
             printf("a connect error\n");
             continue ;
         }
@@ -388,6 +392,8 @@ static void *waitTcpMsg(void* arg) {
         close(msgfd);
         printf("callback over, ret %d errno %d\n", ret, errno);
     }
+
+    return NULL;
 }
 
 int tcp_listen_start(RECV_TCP_MSG_BODY** entry, handTcpMsg callback, char* serverip, int port) {
