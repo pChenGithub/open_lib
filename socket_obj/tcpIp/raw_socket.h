@@ -95,7 +95,7 @@ typedef int(*handRawRsp)(char* rspstr, int len);
 int raw_sendmsg_wait(char *buff, int bufflen, int sendsize, unsigned char destmac[6],
                      unsigned char srcmac[6], unsigned short protocalType, handRawRsp callbk, unsigned int ms);
 // arp包发送
-int arp_sendmsg_wait(char *buff, int bufflen, int sendsize,
+int arp_sendmsg_wait(char *buff, unsigned int bufflen, unsigned int sendsize,
                      unsigned char destmac[6], handRawRsp callbk, unsigned int ms);
 
 #ifdef __cplusplus

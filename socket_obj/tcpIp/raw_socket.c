@@ -337,7 +337,7 @@ free_exit:
     return ret;
 }
 
-int arp_sendmsg_wait(char *strbuff, int bufflen, int sendsize, unsigned char destmac[6],
+int arp_sendmsg_wait(char *strbuff, unsigned int bufflen, unsigned int sendsize, unsigned char destmac[6],
     handRawRsp callbk, unsigned int ms) {
     (void)ms;
     int selret = 0;
@@ -370,7 +370,7 @@ int arp_sendmsg_wait(char *strbuff, int bufflen, int sendsize, unsigned char des
 
 #if __WIN32
     // IPPROTO_ICMP
-    sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_IP);
+    sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (INVALID_SOCKET==sockfd) {
         WSACleanup();
 #else
@@ -396,8 +396,8 @@ int arp_sendmsg_wait(char *strbuff, int bufflen, int sendsize, unsigned char des
     parp->srcmac[5] =  0x64;
     
 #if __WIN32
-    parp->type[0] = (IPPROTO_IP>>8)&0xff;
-    parp->type[1] = IPPROTO_IP&0xff;
+    parp->type[0] = 0x08;
+    parp->type[1] = 0x06;
 #else
     parp->type[0] = (ETH_P_ARP>>8)&0xff;
     parp->type[1] = ETH_P_ARP&0xff;
@@ -434,6 +434,16 @@ int arp_sendmsg_wait(char *strbuff, int bufflen, int sendsize, unsigned char des
     memcpy(psend+60, strbuff, sendsize);
 
 #if __WIN32
+    struct sockaddr_in  cliaddr;
+    bzero(&cliaddr, sizeof(cliaddr));
+    //int index = if_nametoindex ("enp0s3");
+    //printf("iface index %d\n", index);
+    //cliaddr.sll_ifindex = if_nametoindex ("enp0s3");
+    //cliaddr.sll_family = AF_PACKET;
+    //memcpy (cliaddr.sll_addr, srcmac, 6);
+    //cliaddr.sll_halen = htons (6);
+    // 数据发送
+    ret = sendto(sockfd, psend, sendsize+60, 0, (struct sockaddr*)(&cliaddr), sizeof(cliaddr));
 #else
     struct sockaddr_ll  cliaddr;
     bzero(&cliaddr, sizeof(cliaddr));
