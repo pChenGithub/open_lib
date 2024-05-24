@@ -1,0 +1,49 @@
+# source libX11
+https://www.x.org/releases/individual/lib/
+
+## X11/X.h：没有那个文件或目录
+## 依赖 xproto
+https://xorg.freedesktop.org/archive/individual/proto/
+
+## X11/Xtrans/Xtrans.h：没有那个文件或目录
+## 依赖 xtrans
+https://xorg.freedesktop.org/archive/individual/lib/xtrans-1.4.0.tar.bz2
+
+## X11/extensions/XKBproto.h：没有那个文件或目录
+## 依赖 kbproto
+http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-kbproto/
+
+## X11/extensions/XI.h：没有那个文件或目录
+## 依赖 inputproto
+http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-inputproto/
+
+## xcb/xcb.h：没有那个文件或目录
+## 依赖 libxcb
+https://xcb.freedesktop.org/dist/
+
+### No package 'xcb-proto' found
+### 依赖 xcb-proto
+https://xcb.freedesktop.org/dist/
+
+### X11/Xauth.h：没有那个文件或目录
+### 依赖 libXau
+https://www.x.org/releases/individual/lib/
+
+#### X11/Xfuncproto.h：没有那个文件或目录
+#### 依赖 
+指定头文件的路径到输出目录
+
+
+
+
+
+# 记录地址
+xtrans-1.4.0.tar.bz2 http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-xtrans/
+xproto-7.0.31.tar.bz2 http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-xproto/
+kbproto-1.0.7.tar.bz2 http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-kbproto/
+inputproto-2.3.2.tar.bz2 http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-inputproto/
+libxcb-1.14.tar.xz http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-libxcb/
+xcb-proto-1.14.tar.xz http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-xcb-proto/
+libXau-1.0.9.tar.bz2 http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-libXau/
+xorgproto-2020.1.tar.bz2 http://www.mirrorservice.org/sites/distfiles.macports.org/xorg-xorgproto/
+
