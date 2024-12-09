@@ -8,7 +8,7 @@
 
 #include "mongoose.h"
 
-static const char *s_listen_on = "http://192.168.1.107:8000";
+static const char *s_listen_on = "http://0.0.0.0:8000";
 static const char *s_web_directory = ".";
 
 // This RESTful server implements the following endpoints:
@@ -34,7 +34,11 @@ static void fn(struct mg_connection *c, int ev, void *ev_data, void *fn_data) {
     // Got websocket frame. Received data is wm->data. Echo it back!
     struct mg_ws_message *wm = (struct mg_ws_message *) ev_data;
     printf("recv ws data %s \n", wm->data.ptr);
-    mg_ws_send(c, wm->data.ptr, wm->data.len, WEBSOCKET_OP_TEXT);
+//    mg_ws_send(c, wm->data.ptr, wm->data.len, WEBSOCKET_OP_TEXT);
+
+//	char* sdata = "{\"online\":1,\"controlVer\":\"5.1.23.0255\"}";
+	char* sdata = "{\"online\":0}";
+    mg_ws_send(c, sdata, strlen(sdata), WEBSOCKET_OP_TEXT);
     mg_iobuf_delete(&c->recv, c->recv.len);
   }
   (void) fn_data;
