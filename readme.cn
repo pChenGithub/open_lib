@@ -1,0 +1,5 @@
+# 测试远程仓库是否链接
+ssh -T <gitname>@github.com
+# 如果显示显现受限，更新一下
+eval "$(ssh-agent -s)"
+

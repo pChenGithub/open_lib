@@ -17,8 +17,9 @@ int getSTime(char* s, int slen);
 // 获取毫秒,字符串返回
 int getMsTime(char* ms, int mslen);
 // 获取时间,年月日,时分秒,字符串返回,年保留2个字节
-int getStdDataTimeStr(char* dt, int dtlen, const char* format);
-//
+int getStdDateTimeStr(char* dt, int dtlen, const char* format);
+// 设置系统时间,,格式化的时间,2023-06-06 06:06:06
+int setSysTime(const char* formatTime, char syncHw);
 #ifdef __cplusplus
 }
 #endif

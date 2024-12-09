@@ -27,6 +27,8 @@ extern "C" {
 #define MQERR_SETCALLBACK   11 // 设置回调函数失败
 #define MQERR_SUBSCRIBE_FAIL    12 // 订阅主题失败
 #define MQERR_UNSUBSCRIBE_FAIL  13 // 取消订阅主题失败
+#define MQERR_SYNCMODE_RECVTIMEOUT  14 // 同步消息模式,等待recv消息超时
+#define MQERR_BUFF_NOTENOUGH        15 // 设置缓存大小不足
 
 
 typedef enum {
@@ -45,7 +47,7 @@ typedef struct {
 } MQClient;
 
 // 创建一个mqtt客户端
-int createMqttclient(MQClient **client, const char *addr, const char *clientid);
+int createMqttclient(MQClient **client, const char *addr, const char *clientid, const char *username, const char *passw);
 // 销毁mqtt客户端
 int destroyMqttclient(MQClient* client);
 // 设置回调函数
@@ -56,6 +58,8 @@ typedef enum {
     RETAINED_ON,
 } RETAINED_TYPE;
 int pushOneMessage(MQClient *client, const char *topic, const char *message, RETAINED_TYPE type);
+// 提交一条消息等待回应
+int pushOneMessageWait(MQClient *client, const char *topic, const char *message, int messageLen, const char* waitTopic, int timeoutWaitMs);
 // 订阅主题
 int subscribeTopic(MQClient* client, const char* topic, int qos);
 // 取消订阅

@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "linkedlist.h"
 
 int init_linkedlist(LINK_HEAD** head) {
@@ -14,6 +16,11 @@ int init_linkedlist(LINK_HEAD** head) {
     phead->node.pre = & phead->node;
     phead->nodecount = 0;
 
+    if (0!=pthread_mutex_init(&phead->lock_linked, NULL)) {
+        free(phead);
+        return -LKLIST_ERR_INIT_MUTEXLOCK;
+    }
+
     *head = phead;
     return 0;
 }
@@ -21,6 +28,8 @@ int init_linkedlist(LINK_HEAD** head) {
 int free_linkedlist(LINK_HEAD* head) {
     if (NULL==head)
         return -LKLIST_ERR_CHECKPARAM;
+
+    pthread_mutex_destroy(&head->lock_linked);
 
     free(head);
     return 0;
@@ -34,6 +43,11 @@ int insert_lknode(LINK_HEAD* head, LINK_NODE* node, int index) {
     if (index>(head->nodecount) || (-index)>(head->nodecount))
         return -LKLIST_ERR_CHECKPARAM;
 
+    if (0!=pthread_mutex_trylock(&head->lock_linked)) {
+        usleep(10000);
+        if (0!=pthread_mutex_trylock(&head->lock_linked))
+            return -LKLIST_ERR_LOCK;
+    }
     if (index>0) {
         while (index--)
             pnode = pnode->next;
@@ -47,6 +61,9 @@ int insert_lknode(LINK_HEAD* head, LINK_NODE* node, int index) {
     pnode->next->pre = node;
     pnode->next = node;
     node->pre = pnode;
+
+    head->nodecount++;
+    pthread_mutex_unlock(&head->lock_linked);
 
     return 0;
 }
@@ -60,6 +77,13 @@ int insert_head(LINK_HEAD* head, LINK_NODE* node) {
 int insert_tail(LINK_HEAD* head, LINK_NODE* node) {
     if (NULL==head || NULL==node)
         return -LKLIST_ERR_CHECKPARAM;
+
+    if (0!=pthread_mutex_trylock(&head->lock_linked)) {
+        usleep(10000);
+        if (0!=pthread_mutex_trylock(&head->lock_linked))
+            return -LKLIST_ERR_LOCK;
+    }
+
     LINK_NODE* pnode = head->node.pre;
 
     // pnode --- node 
@@ -67,6 +91,9 @@ int insert_tail(LINK_HEAD* head, LINK_NODE* node) {
     pnode->next->pre = node;
     pnode->next = node;
     node->pre = pnode;
+
+    head->nodecount++;
+    pthread_mutex_unlock(&head->lock_linked);
     return 0;
 }
 
@@ -75,8 +102,16 @@ int remove_lknode(LINK_HEAD* head, int index, LINK_NODE** node) {
     if (NULL==head || 0==index || NULL==node)
         return -LKLIST_ERR_CHECKPARAM;
     
-    if (index>(head->nodecount) || (-index)>(head->nodecount))
+    if (0!=pthread_mutex_trylock(&head->lock_linked)) {
+        usleep(10000);
+        if (0!=pthread_mutex_trylock(&head->lock_linked))
+            return -LKLIST_ERR_LOCK;
+    }
+
+    if (index>(head->nodecount) || (-index)>(head->nodecount)) {
+        pthread_mutex_unlock(&head->lock_linked);
         return -LKLIST_ERR_CHECKPARAM;
+    }
 
     if (index>0) {
         while (index--)
@@ -89,6 +124,9 @@ int remove_lknode(LINK_HEAD* head, int index, LINK_NODE** node) {
     pnode->pre->next = pnode->next;
     pnode->next->pre = pnode->pre;
     *node = pnode;
+
+    head->nodecount--;
+    pthread_mutex_unlock(&head->lock_linked);
     return 0;
 }
 
@@ -97,14 +135,20 @@ int foreach_lklist(LINK_HEAD* head, hand_node hand) {
     if (NULL==head || NULL==hand)
         return -LKLIST_ERR_CHECKPARAM;
 
-    int count = head->nodecount;
+    if (0!=pthread_mutex_trylock(&head->lock_linked)) {
+        usleep(10000);
+        if (0!=pthread_mutex_trylock(&head->lock_linked))
+            return -LKLIST_ERR_LOCK;
+    }
+
     LINK_NODE* node = head->node.next;
-    for (int i=0;i<count;i++) {
+    for (int i=0;i<head->nodecount;i++) {
         if ((ret=hand(node))<0)
             break;
         node = node->next;
     }
 
+    pthread_mutex_unlock(&head->lock_linked);
     return ret;
 }
 

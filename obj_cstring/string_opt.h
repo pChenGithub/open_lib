@@ -27,10 +27,23 @@ int strCopyC(char* buff, int len, const char* str);
 })
 // 数字转字符串,需要指定buff,并会返回这个buff
 char* ll2Str(char* out, int outlen, long long in);
+char* l2Str(char* out, int outlen, long in);
 char *i2Str(char* out, int outlen, int in);
 // 4字节IP转字符串,ipBytes是char[4]类型
 char* ipByte2Str(char* ipBytes, char* out, int outlen);
-
+// IP转4字节数字
+int ipStr2Byte4(unsigned char* ipBytes, const char* ip);
+// 从url字符串获取主机域名/IP
+char* getHostFromUrl(const char* url, char* host, int len);
+//***************************************************************
+// 字符串切割,失败返回负值,成功返回字符串个数
+typedef struct {
+    char* buff;
+    int bufflen;
+} CUT_STR;
+int cutStr(const char* src, char cutchar, CUT_STR* out, int outlen);
+// 跟cutStr的区别在于,cutStrSelf,会修改源字符串,由一个数组返回字符串的地址
+int cutStrSelf(char* src, char cutchar, char** out, int outlen);
 #ifdef __cplusplus
 }
 #endif

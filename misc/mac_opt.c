@@ -1,5 +1,5 @@
 #include "mac_opt.h"
-#include "../string/string_opt.h"
+#include "string_opt.h"
 #include <stdio.h>
 #include <ctype.h>
 

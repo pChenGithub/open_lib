@@ -2,6 +2,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
 int getStdTime(char* hour, char* min, char* sec) {
     return 0;
@@ -51,7 +53,7 @@ int getMsTime(char *ms, int mslen)
 
 // %Y%m%d%H%M%S 20230104161100
 // %y%m%d%H%M%S 230104161100
-int getStdDataTimeStr(char *dt, int dtlen, const char *format)
+int getStdDateTimeStr(char *dt, int dtlen, const char *format)
 {
     if (NULL==dt || dtlen<=0 || NULL==format)
         return -TIMEOPT_ERR_CHECKPARAM;
@@ -71,5 +73,26 @@ int getSTime(char *s, int slen)
         return -TIMEOPT_ERR_CHECKPARAM;
     time_t t = time(NULL);
     snprintf(s, slen, "%ld", t);
+    return 0;
+}
+
+int setSysTime(const char *formatTime, char syncHw)
+{
+    // date -s '2023-06-06 06:06:06'    29
+    // date -s '2023-06-06 06:06:06';hwclock -wl
+    char cmd[64] = {0};
+    if (NULL==formatTime)
+        return -TIMEOPT_ERR_CHECKPARAM;
+
+    if (19!=strlen(formatTime) || '-'!=formatTime[4] || '-'!=formatTime[7])
+        return -TIMEOPT_ERR_CHECKPARAM;
+
+    snprintf(cmd, 64, "date -s '%s'", formatTime);
+    if (syncHw)
+        snprintf(cmd+29, 45, ";hwclock -wl");
+
+    // 执行
+    system(cmd);
+
     return 0;
 }
