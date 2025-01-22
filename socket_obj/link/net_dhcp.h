@@ -3,6 +3,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#define NET_DHCP_AGAIN  37  // 重复dhcp
 typedef enum {
     DHCP_RUNNING = 0,
     DHCP_FAIL_END,

@@ -82,7 +82,7 @@ static int parse_linkevent(hand_netlink_ev cb, struct nlmsghdr* msg) {
 }
 
 // 监听线程
-#define NL_RECVBUFF_LEN 1024
+#define NL_RECVBUFF_LEN 2048
 static char recvbuff[NL_RECVBUFF_LEN] = {0};
 static void* recv_from_netlink(void* arg) {
     int ret = 0;
@@ -138,6 +138,11 @@ static void* recv_from_netlink(void* arg) {
     }
 }
 
+/**
+ * @brief start_netlink_listen
+ *  开始netlink事件监听
+ * @return
+ */
 int start_netlink_listen() {
     int ret = 0;
     if (NL_THREAD_RUNNING&server.flag)
@@ -171,7 +176,11 @@ closefd_exit:
     return ret;        
 }
 
-// 停止netlink事件监听
+/**
+ * @brief stop_netlink_listen
+ *  停止netlink事件监听
+ * @return
+ */
 int stop_netlink_listen() {
     NETLINK_LISTEN* sv = &server;
     // 停止线程
@@ -235,33 +244,47 @@ int nl_getGateways(const char* dist, const char* devname, const char* gate, ROUT
     }
 
     int recvlen = 0;
-    char *p = (char *)nlmsg;
-#if 1
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(socketfd, &fds);
-    struct timeval tv;
-    // 超时设置500ms
-    tv.tv_sec = 0;
-	tv.tv_usec = 500000;
-    while (select(socketfd+1, &fds, NULL, NULL, &tv)>0){
-        ret = recv(socketfd, p + recvlen, GETROUTE_BUFFSIZE - recvlen, 0);
-        if (ret<0){
-            ret = -NETERR_SOCKET_RECVFAIL;
-            goto closefd_exit;
-        }
-        recvlen += ret;
-    }
-#else
+    char* p = (char*)nlmsg;
+
+    // 循环读取返回结果
+#if 0
     while (ret=recv(socketfd, p+recvlen, GETROUTE_BUFFSIZE-recvlen, 0)) {
-        printf("获取内容 %d\n", ret);
-        if (0 == ret)
+        if (0==ret)
             break;
         else if (ret<0) {
             ret = -NETERR_SOCKET_RECVFAIL;
             goto closefd_exit;
         }
         recvlen += ret;
+    }
+#else
+    fd_set rfds;
+    struct timeval tv;
+
+    FD_ZERO(&rfds);
+    FD_SET(socketfd, &rfds);
+    // 设置超时时间
+    tv.tv_sec = 0;
+    tv.tv_usec = 600000;
+
+wait_route_data:
+    ret = select(socketfd+1, &rfds, NULL, NULL, &tv);
+    if (ret<0) {
+        ret = -NETERR_SELECT;
+        goto closefd_exit;
+    } else if (ret>0){
+        // 可读
+        ret = recv(socketfd, p+recvlen, GETROUTE_BUFFSIZE-recvlen, 0);
+        if (ret<0) {
+            ret = -NETERR_SOCKET_RECVFAIL;
+            goto closefd_exit;
+        } else if (ret>0) {
+            recvlen += ret;
+            goto wait_route_data;
+        }
+    } else {
+        ret = -NETERR_SELECT_TIMEOUT;
+        goto closefd_exit;
     }
 #endif
 
