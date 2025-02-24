@@ -18,15 +18,18 @@ typedef struct {
 } DHCP_PTHREAD;
 
 SHELL_RET_TYPE hand_retstr(const char* linestr) {
-    //printf("shell结果 %s\n", linestr);
+    printf("shell结果 %s\n", linestr);
     if (!strncmp(linestr, "No lease, failing", 17))
         return SHELL_RET_ERR;
+#if 0
     else if (!strncmp(linestr, "Sending select for", 18))
         return SHELL_RET_OK;
+#endif
     return SHELL_RET_IGNORE;
 }
 
 static void* run_dhcp(void* arg) {
+    int ret = 0;
     DHCP_PTHREAD* pcmd = (DHCP_PTHREAD*)arg;
     memset(pcmd->cmdstr, 0, CMDSTR_LEN);
     snprintf(pcmd->cmdstr, CMDSTR_LEN, "udhcpc -i %s", pcmd->ifname);
@@ -35,16 +38,22 @@ static void* run_dhcp(void* arg) {
         snprintf(pcmd->cmdstr+cmdlen, CMDSTR_LEN-cmdlen, " -n -T %d", pcmd->timeouts);
     }
 
-    //printf("执行的命令 %s\n", pcmd->cmdstr);
+    printf("执行的命令 %s\n", pcmd->cmdstr);
 
     if (pcmd->hand)
         pcmd->hand(DHCP_RUNNING);
-    int ret = exeShellWait(pcmd->cmdstr, hand_retstr);
-    if (ret<0) {
+
+dhcp_again:
+    ret = exeShellWait(pcmd->cmdstr, hand_retstr);
+    if (ret<0 && -MIXSHELLERR_EXESHELL_TIMEOUT!=ret) {
         //printf("执行的命令失败，错误码 %d\n", ret);
+        ret = 0;
         if (pcmd->hand)
-            pcmd->hand(DHCP_FAIL_END);
-        goto exit;
+            ret = pcmd->hand(DHCP_FAIL_END);
+        if (-NET_DHCP_AGAIN==ret)
+            goto dhcp_again;
+        else
+            goto exit;
     }
     //printf("执行的命令成功，结果 %s\n", pcmd->cmdstr);   
     if (pcmd->hand)
@@ -52,6 +61,7 @@ static void* run_dhcp(void* arg) {
 
 exit:
     // 变回干净
+    printf("标记为干净\n");
     pcmd->flag &= ~(DIRTY_FLAG);
     return NULL;
 }
@@ -86,6 +96,7 @@ int start_dhcp(const char* ifname, int timeouts, hand_dhcpstatus hand) {
         return -NETERR_PTHREADCREATE_FAIL;      
     pthread_detach(pcmd->pid);
     // 标记为脏
+    printf("标记为脏\n");
     pcmd->flag |= DIRTY_FLAG;
     return 0;
 }
@@ -103,6 +114,9 @@ int stop_dhcp(const char* ifname) {
         if (DIRTY_FLAG&pcmd[i].flag && !strncmp(pcmd[i].ifname, ifname, strlen(ifname)+1))
             break;
     }
+
+    if (i>=MAX_DHCP_COUNT)
+        return -NETERR_FINDNO_ENTRY;
 
     pcmd += i;
     if (0!=pthread_cancel(pcmd->pid))
